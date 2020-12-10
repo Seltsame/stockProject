@@ -8,7 +8,6 @@ import ru.rocketscience.test.repository.StockRepository;
 
 import java.util.Optional;
 
-
 @Service
 @RequiredArgsConstructor
 public class StockService {
