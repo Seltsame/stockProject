@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 
 @SpringBootTest(webEnvironment= SpringBootTest.WebEnvironment.RANDOM_PORT) //RANDOM_PORT
-@ActiveProfiles("test")
+@ActiveProfiles("test") //выбор профиля работы приложения, прописанного в properties
 class StockTests {
 
     @Autowired

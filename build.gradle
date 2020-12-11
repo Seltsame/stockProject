@@ -28,6 +28,8 @@ dependencies {
 	implementation 'org.flywaydb:flyway-core' //подключение flyWay
 	implementation 'org.mapstruct:mapstruct:1.4.1.Final' //подключение mapStruct
 	compileOnly 'org.projectlombok:lombok'
+	compile group: 'io.springfox', name: 'springfox-swagger2', version: '2.7.0' //подключение Swagger
+	compile group: 'io.springfox', name: 'springfox-swagger-ui', version: '2.7.0' //подключение Swagger
 	runtimeOnly 'org.postgresql:postgresql'
 	annotationProcessor 'org.projectlombok:lombok'
 	annotationProcessor 'org.mapstruct:mapstruct-processor:1.4.1.Final' //подключение mapStruct
