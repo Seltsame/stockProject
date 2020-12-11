@@ -26,7 +26,9 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.flywaydb:flyway-core' //подключение flyWay
-	implementation 'org.mapstruct:mapstruct:1.4.1.Final' //подключение mapStruct
+	implementation 'org.mapstruct:mapstruct:1.4.1.Final'
+    implementation 'org.projectlombok:lombok:1.18.16'
+	implementation 'org.projectlombok:lombok:1.18.16'//подключение mapStruct
 	compileOnly 'org.projectlombok:lombok'
 	compile group: 'io.springfox', name: 'springfox-swagger2', version: '2.7.0' //подключение Swagger
 	compile group: 'io.springfox', name: 'springfox-swagger-ui', version: '2.7.0' //подключение Swagger
