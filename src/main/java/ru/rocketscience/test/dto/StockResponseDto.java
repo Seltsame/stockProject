@@ -1,11 +1,11 @@
 package ru.rocketscience.test.dto;
 
-import lombok.*;
+import lombok.Value;
 
 @Value
-@Builder
 public class StockResponseDto {
 
+    Long id;
     String name;
     String city;
 }

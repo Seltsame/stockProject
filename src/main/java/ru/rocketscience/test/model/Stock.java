@@ -1,6 +1,6 @@
 package ru.rocketscience.test.model;
 
-import lombok.*;
+import lombok.Data;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
