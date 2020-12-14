@@ -10,21 +10,41 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 import ru.rocketscience.test.dto.ResponseDto;
 import ru.rocketscience.test.dto.StockResponseDto;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+
 //RANDOM_PORT, чтобы использовался случайный порт, а не 8080.
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ActiveProfiles("test")
-        //выбор профиля работы приложения, прописанного в properties
-
+@ActiveProfiles("test") //выбор профиля работы приложения, прописанного в properties
+@Testcontainers
 class StockTests {
 
     public static final ParameterizedTypeReference<ResponseDto<StockResponseDto>> STOCK_RESPONSE =
             new ParameterizedTypeReference<>() {
             };
+
+    @Container //бин с настройками бд
+    public static PostgreSQLContainer postgreSQLContainer = new PostgreSQLContainer("postgres:11.10")
+            .withDatabaseName("horse")
+            .withUsername("postgres")
+            .withPassword("qwerty");
+
+    @DynamicPropertySource //подключение к бд в Docker
+    static void postgresqlProperties(DynamicPropertyRegistry registry) {
+        registry.add("spring.datasource.url", postgreSQLContainer::getJdbcUrl);
+        registry.add("spring.datasource.password", postgreSQLContainer::getPassword);
+        registry.add("spring.datasource.username", postgreSQLContainer::getUsername);
+    }
+
+
     @Autowired
     TestRestTemplate restTemplate; //Http-клиент
 

@@ -37,8 +37,9 @@ public class StockController {
         String exMessage = ex.getMessage();
         //лог должен начинаться с имени метода! Тут имя метода: handleValidateException. Ошибки обрабатываются на уровне log.error!!
         log.error("handleValidateException: finished with exception : {}", exMessage);
+        //если отрабатывает StockResponseDto, то нам летит ошибка
         return new ResponseDto<>(exMessage, null);
-        // Если отрабатывает StockResponseDto, то нам летит ошибка
+
     }
 
     /* Если ошибка обрабатывается Spring'ом, то надо ее использовать в handler,
@@ -49,8 +50,9 @@ public class StockController {
         String exMessage = ex.getMessage();
         //лог должен начинаться с имени метода! Тут имя метода: handleArgumentTypeMismatchException
         log.error("handleArgumentTypeMismatchException: finished with exception : {}", exMessage);
-        //в хорошем error handling'е в ошибке выводится то, что прилетело от клиента.
-        return new ResponseDto<>("Номер склада должен быть указан числом! " + "Ошибка ввода в: " + ex.getParameter().getParameterName() + ", со значением value: " + ex.getValue(), null);
+        //в хорошем error handling'е в ошибке выводится то, что прилетело от клиента: параметр и значение.
+        return new ResponseDto<>("Номер склада должен быть указан числом! " + "Ошибка ввода в: " + ex.getParameter().getParameterName()
+                + ", со значением value: " + ex.getValue(), null);
     }
 }
 

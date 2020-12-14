@@ -1,7 +1,7 @@
 plugins {
-	id 'org.springframework.boot' version '2.3.6.RELEASE'
-	id 'io.spring.dependency-management' version '1.0.10.RELEASE'
-	id 'java'
+    id 'org.springframework.boot' version '2.3.6.RELEASE'
+    id 'io.spring.dependency-management' version '1.0.10.RELEASE'
+    id 'java'
 }
 
 group = 'ru.rocketscience'
@@ -9,47 +9,49 @@ version = '0.0.1-SNAPSHOT'
 sourceCompatibility = '11'
 
 configurations {
-	compileOnly {
-		extendsFrom annotationProcessor
-	}
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
 }
 
 repositories {
-	mavenCentral()
+    mavenCentral()
 }
 
 ext {
-	set('testcontainersVersion', "1.15.0")
+    set('testcontainersVersion', "1.15.0")
 }
 
 dependencies {
-	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-	implementation 'org.springframework.boot:spring-boot-starter-web'
-	implementation 'org.flywaydb:flyway-core' //подключение flyWay
-	implementation 'org.mapstruct:mapstruct:1.4.1.Final'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.flywaydb:flyway-core' //подключение flyWay
+    implementation 'org.mapstruct:mapstruct:1.4.1.Final' //подключение mapStruct
     implementation 'org.projectlombok:lombok:1.18.16'
-	implementation 'org.projectlombok:lombok:1.18.16'//подключение mapStruct
-	compileOnly 'org.projectlombok:lombok'
-	compile group: 'io.springfox', name: 'springfox-swagger2', version: '2.7.0' //подключение Swagger
-	compile group: 'io.springfox', name: 'springfox-swagger-ui', version: '2.7.0' //подключение Swagger
-	runtimeOnly 'org.postgresql:postgresql'
-	annotationProcessor 'org.projectlombok:lombok'
-	annotationProcessor 'org.mapstruct:mapstruct-processor:1.4.1.Final' //подключение mapStruct
-	testImplementation('org.springframework.boot:spring-boot-starter-test') {
-		exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
-	}
-	testImplementation 'org.testcontainers:junit-jupiter'
-	testImplementation 'org.testcontainers:postgresql'
-	testImplementation 'org.springframework.boot:spring-boot-starter-test' //утилиты spring для тестирования
+    implementation 'org.projectlombok:lombok:1.18.16'
+    implementation 'io.springfox:springfox-swagger2:2.7.0' //подключение Swagger
+    implementation 'io.springfox:springfox-swagger-ui:2.7.0' //подключение Swagger
+    compileOnly 'org.projectlombok:lombok'
+    runtimeOnly 'org.postgresql:postgresql'
+    annotationProcessor 'org.projectlombok:lombok'
+    annotationProcessor 'org.mapstruct:mapstruct-processor:1.4.1.Final' //подключение mapStruct
+    testImplementation('org.springframework.boot:spring-boot-starter-test') {
+        exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
+    }
+    testImplementation 'org.testcontainers:junit-jupiter'
+    testImplementation 'org.testcontainers:postgresql'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test' //утилиты spring для тестирования
+    testImplementation 'org.testcontainers:postgresql' //подключение тестконтейнеров Docker к бд
+    testImplementation 'org.testcontainers:junit-jupiter' //подключение тестконтейнеров Docker к бд
 
 }
 
 dependencyManagement {
-	imports {
-		mavenBom "org.testcontainers:testcontainers-bom:${testcontainersVersion}"
-	}
+    imports {
+        mavenBom "org.testcontainers:testcontainers-bom:${testcontainersVersion}"
+    }
 }
 
 test {
-	useJUnitPlatform()
+    useJUnitPlatform()
 }
