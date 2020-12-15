@@ -38,7 +38,6 @@ dependencies {
     testImplementation('org.springframework.boot:spring-boot-starter-test') {
         exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
     }
-    testImplementation 'org.testcontainers:junit-jupiter'
     testImplementation 'org.testcontainers:postgresql'
     testImplementation 'org.springframework.boot:spring-boot-starter-test' //утилиты spring для тестирования
     testImplementation 'org.testcontainers:postgresql' //подключение тестконтейнеров Docker к бд

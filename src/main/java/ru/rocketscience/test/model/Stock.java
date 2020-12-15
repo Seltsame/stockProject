@@ -17,4 +17,6 @@ public class Stock {
 
     private String name;
     private String city;
+
+
 }

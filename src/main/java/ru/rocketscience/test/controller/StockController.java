@@ -7,7 +7,9 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import ru.rocketscience.test.ValidateException;
 import ru.rocketscience.test.dto.ResponseDto;
 import ru.rocketscience.test.dto.StockResponseDto;
+import ru.rocketscience.test.dto.request.StockRequestDto;
 import ru.rocketscience.test.service.StockService;
+
 
 @RestController
 @RequestMapping(path = "stock")
@@ -27,25 +29,29 @@ public class StockController {
         log.debug("get: started with: {}", id);
         StockResponseDto result = stockService.getById(id);
         log.info("get: finished for id: {} with: {}", id, result); //log.info: выводим результат работы get-запроса
-        return new ResponseDto<>(null, result); // если все нормально, отрабатывает StockResponseDto, на выходе имеем result
+        return new ResponseDto<>(null, result); // если все нормально, отрабатывает StockResponseDto, на выходе имеем result, err == null
+    }
+
+    @PostMapping(path = "add")
+    public Long addStock(@RequestBody StockRequestDto stockRequestDto) {
+       return stockService.addStock(stockRequestDto);
     }
 
     //Обработчик ошибок
     @ExceptionHandler
-    @ResponseStatus(code = HttpStatus.BAD_REQUEST)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ResponseDto<StockResponseDto> handleValidateException(ValidateException ex) {
         String exMessage = ex.getMessage();
         //лог должен начинаться с имени метода! Тут имя метода: handleValidateException. Ошибки обрабатываются на уровне log.error!!
         log.error("handleValidateException: finished with exception : {}", exMessage);
-        //если отрабатывает StockResponseDto, то нам летит ошибка
+        //если отрабатывает StockResponseDto, то нам летит ошибка, дата, соотв. null
         return new ResponseDto<>(exMessage, null);
-
     }
 
     /* Если ошибка обрабатывается Spring'ом, то надо ее использовать в handler,
     соответственно, вывод сообщения через ResponseDto - text */
     @ExceptionHandler
-    @ResponseStatus(code = HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ResponseDto<StockResponseDto> handleArgumentTypeMismatchException(MethodArgumentTypeMismatchException ex) {
         String exMessage = ex.getMessage();
         //лог должен начинаться с имени метода! Тут имя метода: handleArgumentTypeMismatchException

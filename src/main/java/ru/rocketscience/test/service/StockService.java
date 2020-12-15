@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.rocketscience.test.ValidateException;
 import ru.rocketscience.test.dto.StockResponseDto;
+import ru.rocketscience.test.dto.request.StockRequestDto;
 import ru.rocketscience.test.mapper.StockMapper;
 import ru.rocketscience.test.model.Stock;
 import ru.rocketscience.test.repository.StockRepository;
@@ -23,5 +24,11 @@ public class StockService {
             throw new ValidateException("Склада с id = " + id + " не существует");
         }
         return stockMapper.fromEntity(optStock.get());
+    }
+
+    //возвращаем ID после записи в репозиторий
+    public Long addStock(StockRequestDto stockRequestDto) {
+        Stock save = stockRepository.save(stockMapper.toEntity(stockRequestDto));
+        return save.getId();
     }
 }
