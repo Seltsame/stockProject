@@ -39,11 +39,14 @@ public class StockController {
 
     @DeleteMapping(path = "/{id}")
     public void deleteStock(@PathVariable Long id) {
-        log.debug("get: started with: {}", id);
+        log.debug("delete: started with: {}", id);
         stockService.deleteStock(id);
+        log.info("delete: finished for id: {}", id);
     }
 
-    //Обработчик ошибок
+    /*
+     * Обработчик ошибок
+     * Ошибка взятия несуществующего ID */
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST) //Использование Bad request - самое оптимальное в handler
     public ResponseDto<StockResponseDto> handleValidateException(ValidateException ex) {
@@ -55,7 +58,8 @@ public class StockController {
     }
 
     /* Если ошибка обрабатывается Spring'ом, то надо ее использовать в handler,
-     * соответственно, вывод сообщения через ResponseDto - text */
+     * соответственно, вывод сообщения через ResponseDto - text
+     * Обработка ошибки написания ID числом */
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST) //Использование Bad request - самое оптимальное в handler
     public ResponseDto<StockResponseDto> handleArgumentTypeMismatchException(MethodArgumentTypeMismatchException ex) {
@@ -63,8 +67,8 @@ public class StockController {
         //лог должен начинаться с имени метода! Тут имя метода: handleArgumentTypeMismatchException
         log.error("handleArgumentTypeMismatchException: finished with exception : {}", exMessage);
         //в хорошем error handling'е в ошибке выводится то, что прилетело от клиента: параметр и значение.
-        return new ResponseDto<>("Номер склада должен быть указан числом! " + "Ошибка ввода в: " + ex.getParameter().getParameterName()
-                + ", со значением value: " + ex.getValue(), null);
+        return new ResponseDto<>("Номер склада должен быть указан числом! " +
+                "Ошибка ввода в: " + ex.getParameter().getParameterName() + ", со значением value: " + ex.getValue(), null);
     }
 }
 
