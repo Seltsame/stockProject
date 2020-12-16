@@ -26,9 +26,17 @@ public class StockService {
         return stockMapper.fromEntity(optStock.get());
     }
 
-    //возвращаем ID после записи в репозиторий
+    //возвращаем ID после записи в репозиторий(если это нужно, если нет - void)
     public Long addStock(StockRequestDto stockRequestDto) {
         Stock save = stockRepository.save(stockMapper.toEntity(stockRequestDto));
         return save.getId();
+    }
+
+    public void deleteStock(Long id) {
+        Optional<Stock> byId = stockRepository.findById(id);
+        if (byId.isEmpty()) {
+            throw new ValidateException("Склада с id = " + id + " не существует");
+        }
+        stockRepository.deleteById(id);
     }
 }

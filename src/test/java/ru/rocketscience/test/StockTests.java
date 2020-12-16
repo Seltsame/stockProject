@@ -15,6 +15,7 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.shaded.org.apache.commons.lang.enums.EnumUtils;
 import ru.rocketscience.test.dto.ResponseDto;
 import ru.rocketscience.test.dto.StockResponseDto;
 import ru.rocketscience.test.dto.request.StockRequestDto;
@@ -30,11 +31,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 class StockTests {
 
     //объект для фиксации типа generic, чтобы метод getBody() возвращал нужный типизированный результат
+    //(возможно использование Wrapper)
     public static final ParameterizedTypeReference<ResponseDto<StockResponseDto>> STOCK_RESPONSE =
             new ParameterizedTypeReference<>() {
             };
 
-    @Container //бин с настройками бд (Username, Password и dbName теперь берутся из Container == @DynamicPropertySource)
+    @Container
+    //бин с настройками бд (Username, Password и dbName теперь берутся из Container == @DynamicPropertySource)
     public static PostgreSQLContainer postgreSQLContainer = new PostgreSQLContainer("postgres:11.10");
 
     @DynamicPropertySource //подключение к бд в Docker
@@ -72,7 +75,7 @@ class StockTests {
             "44|Склада с id = 44 не существует",
             "четыре|Номер склада должен быть указан числом! Ошибка ввода в: id, со значением value: четыре"})
     void testInvalidGet(String id, String expectedMessage) {
-        String resourceUrl = "http://localhost:" + port + "/stock/get/" + id;
+        String resourceUrl = "http://localhost:" + port + "/stock/" + id;
         ResponseEntity<ResponseDto<StockResponseDto>> response =
                 testRestTemplate.exchange(resourceUrl, HttpMethod.GET, null, STOCK_RESPONSE);
 
@@ -86,8 +89,16 @@ class StockTests {
     void testAdd() {
         String stockName = "Имя склада";
         String cityName = "Имя города";
+        //вытаскиваем id из метода создания Stock
+        Long id = createStock(stockName, cityName);
 
-        String resourceUrl = "http://localhost:" + port + "/stock/add";
+        testGet(String.valueOf(id), stockName, cityName);
+    }
+
+    //получаем id только что созданной и записанной в бд сущности
+    private Long createStock(String stockName, String cityName) {
+
+        String resourceUrl = "http://localhost:" + port + "/stock";
         //Тестовый объект для записи
         StockRequestDto request = StockRequestDto.builder()
                 .name(stockName)
@@ -102,16 +113,16 @@ class StockTests {
 
         assertThat(id).isNotNull();
 
-        testGet(String.valueOf(id), stockName, cityName);
+        return id;
     }
 
     //выполняет get-запрос и проверку ожидаемого и запрашиваемого
-    private void testGet(String id, String stockName, String cityName) {
+    void testGet(String id, String stockName, String cityName) {
 
         //подставляем id(взятый из новосозданной сущности) в url и сверяем с тем, что получилось
-        String resourceUrlId = "http://localhost:" + port + "/stock/get/" + id;
+        String resourceUrlId = "http://localhost:" + port + "/stock/" + id;
 
-        //Вместо Wrapper. Формируем ответ
+        //Вместо Wrapper. Формируем ответ (выполнение метода /get)
         ResponseEntity<ResponseDto<StockResponseDto>> response =
                 testRestTemplate.exchange(resourceUrlId, HttpMethod.GET, null, STOCK_RESPONSE);
         StockResponseDto data = response.getBody().getData();
@@ -120,8 +131,8 @@ class StockTests {
         assertThat(data.getName()).isEqualTo(stockName);
         assertThat(data.getCity()).isEqualTo(cityName);
     }
-
     /* Wrapper используем, как альтернативный способ получить вложенный ответ из response;
+     *  Альтернативный от ParameterizedTypeReference<<>>
      *  Урезанная копия ResponseDto
      *  Плохо тем, что (частино) копирует ResponseDto */
 
@@ -132,4 +143,20 @@ class StockTests {
     //использование Wrapper
     StockDtoWrapper wrapper = testRestTemplate.getForObject(resourceUrlId, StockDtoWrapper.class);
     StockResponseDto data = wrapper.data; */
+
+    //тест delete-метода
+    @Test
+    void testDelete() {
+
+        String stockName = "Новый склад";
+        String cityName = "Новый город";
+
+        testAdd();
+        Long id = createStock(stockName, cityName);
+
+        String resourceUrl = "http://localhost:" + port + "/stock/" + id;
+        //выполнение метода /del
+        testRestTemplate.exchange(resourceUrl, HttpMethod.DELETE, null, STOCK_RESPONSE);
+        testInvalidGet(String.valueOf(id), "Склада с id = " +id + " не существует");
+    }
 }

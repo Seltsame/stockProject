@@ -21,7 +21,7 @@ public class StockController {
         this.stockService = stockService;
     }
 
-    @GetMapping(path = "get/{id}")
+    @GetMapping(path = "/{id}")
     @ResponseBody
     // ResponseDto<StockResponseDto> - через обработчик ошибок пропускаем рабочую DTO
     public ResponseDto<StockResponseDto> getById(@PathVariable Long id) {
@@ -32,14 +32,20 @@ public class StockController {
         return new ResponseDto<>(null, result); // если все нормально, отрабатывает StockResponseDto, на выходе имеем result, err == null
     }
 
-    @PostMapping(path = "add")
+    @PostMapping
     public Long addStock(@RequestBody StockRequestDto stockRequestDto) {
        return stockService.addStock(stockRequestDto);
     }
 
+    @DeleteMapping(path = "/{id}")
+    public void deleteStock(@PathVariable Long id) {
+        log.debug("get: started with: {}", id);
+        stockService.deleteStock(id);
+    }
+
     //Обработчик ошибок
     @ExceptionHandler
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ResponseStatus(HttpStatus.BAD_REQUEST) //Использование Bad request - самое оптимальное в handler
     public ResponseDto<StockResponseDto> handleValidateException(ValidateException ex) {
         String exMessage = ex.getMessage();
         //лог должен начинаться с имени метода! Тут имя метода: handleValidateException. Ошибки обрабатываются на уровне log.error!!
@@ -49,9 +55,9 @@ public class StockController {
     }
 
     /* Если ошибка обрабатывается Spring'ом, то надо ее использовать в handler,
-    соответственно, вывод сообщения через ResponseDto - text */
+     * соответственно, вывод сообщения через ResponseDto - text */
     @ExceptionHandler
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ResponseStatus(HttpStatus.BAD_REQUEST) //Использование Bad request - самое оптимальное в handler
     public ResponseDto<StockResponseDto> handleArgumentTypeMismatchException(MethodArgumentTypeMismatchException ex) {
         String exMessage = ex.getMessage();
         //лог должен начинаться с имени метода! Тут имя метода: handleArgumentTypeMismatchException
