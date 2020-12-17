@@ -34,7 +34,7 @@ public class StockController {
 
     @PostMapping
     public Long addStock(@RequestBody StockRequestDto stockRequestDto) {
-       return stockService.addStock(stockRequestDto);
+        return stockService.addStock(stockRequestDto);
     }
 
     @DeleteMapping(path = "/{id}")
@@ -42,6 +42,13 @@ public class StockController {
         log.debug("delete: started with: {}", id);
         stockService.deleteStock(id);
         log.info("delete: finished for id: {}", id);
+    }
+
+    @PutMapping(path = "/{id}")
+    public void updateStock(@RequestParam StockRequestDto stockRequestDto, @PathVariable Long id) {
+        log.debug("get: started with: {}", id);
+        stockService.updateStock(id, stockRequestDto);
+        log.info("get: finished for id: {}", id);
     }
 
     /*

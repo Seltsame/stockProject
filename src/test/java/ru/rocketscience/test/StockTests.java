@@ -57,7 +57,7 @@ class StockTests {
     @LocalServerPort
     protected int port;
 
-    public static String resourceUrl; //делаем переменную статиком и пишем туда результат выполнения метода
+    public static String resourceUrl; //делаем переменную статиком и пишем туда результат выполнения метода setupUrl
 
     // @BeforeEach - до каждого метода
     @BeforeEach
@@ -87,9 +87,9 @@ class StockTests {
             "44|Склада с id = 44 не существует",
             "четыре|Номер склада должен быть указан числом! Ошибка ввода в: id, со значением value: четыре"})
     void testInvalidGet(String id, String expectedMessage) {
-        String resourceUrl = "http://localhost:" + port + "/stock/" + id;
+
         ResponseEntity<ResponseDto<StockResponseDto>> response =
-                testRestTemplate.exchange(resourceUrl, HttpMethod.GET, null, STOCK_RESPONSE);
+                testRestTemplate.exchange(resourceUrl + id, HttpMethod.GET, null, STOCK_RESPONSE);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(response.getBody().getError()).isEqualTo(expectedMessage);
@@ -99,6 +99,7 @@ class StockTests {
      При добавлении проще и правильнее проверять по id добавленного объекта */
     @Test
     void testAdd() {
+
         String stockName = "Имя склада";
         String cityName = "Имя города";
         //вытаскиваем id из метода создания Stock
@@ -107,31 +108,60 @@ class StockTests {
         testGet(String.valueOf(id), stockName, cityName);
     }
 
+    //тест delete-метода
     @Test
     void testDelete() {
 
         String stockName = "Новый склад";
         String cityName = "Новый город";
-
         Long id = createStock(stockName, cityName);
-
-//        String resourceUrl = "http://localhost:" + port + "/stock/" + id;
 
         //выполнение метода /del
         testRestTemplate.exchange(resourceUrl + id, HttpMethod.DELETE, null, STOCK_RESPONSE);
+
         testInvalidGet(String.valueOf(id), "Склада с id = " + id + " не существует");
-                    }
+    }
+
+    //тест update-метода
+    @Test
+    void testUpdate() {
+
+        String stockName = "Update stock";
+        String cityName = "Update city";
+        Long id = createStock(stockName, cityName);
+        //создаем дто с сущностью
+        StockRequestDto stockRequestDto = createStockRequestDto(stockName, cityName);
+
+        // body(id) - берём сущность по полученному id.
+        RequestEntity<StockRequestDto> requestEntityUpd =  // body(stockRequestDto) - берём сущность по полученному id.
+                RequestEntity.post(URI.create(resourceUrl)).contentType(MediaType.APPLICATION_JSON).body(stockRequestDto);
+
+        //выполнение метода /put
+        testRestTemplate.exchange(resourceUrl + id, HttpMethod.PUT, requestEntityUpd, STOCK_RESPONSE);
+
+        //выполнение теста get() чтобы проверить, берётся Entity с новыми данными
+        testGet(String.valueOf(id), stockName, cityName);
+    }
+
+    //выполняет get-запрос и проверку ожидаемого и запрашиваемого
+    void testGet(String id, String stockName, String cityName) {
+
+        /* подставляем id(взятый из новосозданной сущности) в url и сверяем с тем, что получилось
+         * Вместо Wrapper. Формируем ответ (выполнение метода /get) */
+        ResponseEntity<ResponseDto<StockResponseDto>> response =
+                testRestTemplate.exchange(resourceUrl + id, HttpMethod.GET, null, STOCK_RESPONSE);
+        StockResponseDto data = response.getBody().getData();
+
+        assertThat(data).isNotNull();
+        assertThat(data.getName()).isEqualTo(stockName);
+        assertThat(data.getCity()).isEqualTo(cityName);
+    }
 
     //получаем id только что созданной и записанной в бд сущности
     private Long createStock(String stockName, String cityName) {
 
-        //String resourceUrl = "http://localhost:" + port + "/stock";
-        //Тестовый объект для записи
-        StockRequestDto request = StockRequestDto.builder()
-                .name(stockName)
-                .city(cityName)
-                .build();
-        //формирует Http-запрос
+        StockRequestDto request = createStockRequestDto(stockName, cityName);
+        //формирует Http-запрос для получения данных об Entity
         RequestEntity<StockRequestDto> requestEntity =
                 RequestEntity.post(URI.create(resourceUrl)).contentType(MediaType.APPLICATION_JSON).body(request);
         /* получаем только id из бд, чтобы не тащить все данные оттуда (в контроллере надо вернуть значение id после записи
@@ -142,34 +172,24 @@ class StockTests {
         return id;
     }
 
-    //выполняет get-запрос и проверку ожидаемого и запрашиваемого
-    void testGet(String id, String stockName, String cityName) {
-
-        //подставляем id(взятый из новосозданной сущности) в url и сверяем с тем, что получилось
-        // String resourceUrlId = "http://localhost:" + port + "/stock/" + id;
-
-        //Вместо Wrapper. Формируем ответ (выполнение метода /get)
-        ResponseEntity<ResponseDto<StockResponseDto>> response =
-                testRestTemplate.exchange(resourceUrl + id, HttpMethod.GET, null, STOCK_RESPONSE);
-        StockResponseDto data = response.getBody().getData();
-
-        assertThat(data).isNotNull();
-        assertThat(data.getName()).isEqualTo(stockName);
-        assertThat(data.getCity()).isEqualTo(cityName);
+    //Тестовый объект для записи
+    private StockRequestDto createStockRequestDto(String stockName, String cityName) {
+        StockRequestDto request = StockRequestDto.builder()
+                .name(stockName)
+                .city(cityName)
+                .build();
+        return request;
     }
-    /* Wrapper используем, как альтернативный способ получить вложенный ответ из response;
-     *  Альтернативный от ParameterizedTypeReference<<>>
-     *  Урезанная копия ResponseDto
-     *  Плохо тем, что (частино) копирует ResponseDto */
+}
+/* Wrapper используем, как альтернативный способ получить вложенный ответ из response;
+ *  Альтернативный от ParameterizedTypeReference<<>>
+ *  Урезанная копия ResponseDto
+ *  Плохо тем, что (частино) копирует ResponseDto */
 
    /* public static class StockDtoWrapper {
         public StockResponseDto data;
     }
-
     //использование Wrapper
     StockDtoWrapper wrapper = testRestTemplate.getForObject(resourceUrlId, StockDtoWrapper.class);
     StockResponseDto data = wrapper.data; */
 
-    //тест delete-метода
-
-}

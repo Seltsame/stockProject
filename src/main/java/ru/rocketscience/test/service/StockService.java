@@ -20,18 +20,18 @@ public class StockService {
     private final StockRepository stockRepository;
     private final StockMapper stockMapper;
 
-        public StockResponseDto getById(Long id) {
-        Optional<Stock> optStock = stockRepository.findById(id);
-        if (!optStock.isPresent()) {
+    public StockResponseDto getById(Long id) {
+        Optional<Stock> entityToGet = stockRepository.findById(id);
+        if (!entityToGet.isPresent()) {
             throw new ValidateException("Склада с id = " + id + " не существует");
         }
-        return stockMapper.fromEntity(optStock.get());
+        return stockMapper.fromEntity(entityToGet.get());
     }
 
     //возвращаем ID после записи в репозиторий(если это нужно, если нет - void)
     public Long addStock(StockRequestDto stockRequestDto) {
-        Stock save = stockRepository.save(stockMapper.toEntity(stockRequestDto));
-        return save.getId();
+        Stock addStock = stockRepository.save(stockMapper.toEntity(stockRequestDto));
+        return addStock.getId();
     }
 
     @Transactional
@@ -41,5 +41,17 @@ public class StockService {
         } catch (EmptyResultDataAccessException e) {
             throw new ValidateException("Склада с id = " + id + " не существует");
         }
+    }
+
+    @Transactional
+    public void updateStock(Long id, StockRequestDto stockRequestDto) {
+        Optional<Stock> entityToUpdate = stockRepository.findById(id);
+        if (!entityToUpdate.isPresent()) {
+            throw new ValidateException("Склада с id = " + id + " не существует");
+        }
+        //пишем напрямую в сущность новые пришедшие данные
+        entityToUpdate.get().setCity(stockRequestDto.getCity());
+        entityToUpdate.get().setName(stockRequestDto.getName());
+        stockRepository.save(entityToUpdate.get()); //entityToUpdate.get() - как раз Entity
     }
 }
