@@ -1,6 +1,10 @@
 package ru.rocketscience.test;
 
+import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,11 +34,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 class StockTests {
 
     //объект для фиксации типа generic, чтобы метод getBody() возвращал нужный типизированный результат
+    //(возможно использование Wrapper)
     public static final ParameterizedTypeReference<ResponseDto<StockResponseDto>> STOCK_RESPONSE =
             new ParameterizedTypeReference<>() {
             };
 
-    @Container //бин с настройками бд (Username, Password и dbName теперь берутся из Container == @DynamicPropertySource)
+    @Container
+    //бин с настройками бд (Username, Password и dbName теперь берутся из Container == @DynamicPropertySource)
     public static PostgreSQLContainer postgreSQLContainer = new PostgreSQLContainer("postgres:11.10");
 
     @DynamicPropertySource //подключение к бд в Docker
@@ -51,6 +57,15 @@ class StockTests {
     @LocalServerPort
     protected int port;
 
+    public static String resourceUrl; //делаем переменную статиком и пишем туда результат выполнения метода
+
+    // @BeforeEach - до каждого метода
+    @BeforeEach
+    //создаём повторяющуюся переменную до старта каждого теста.
+    public void setupUrl() {
+        resourceUrl = "http://localhost:" + port + "/stock/";
+    }
+
     /* Для чего выносить код в отдельные методы:
     1. Избежание дублируемого кода:
     1.1 Когда код повторяется;
@@ -64,15 +79,15 @@ class StockTests {
         testGet("2", "Морской склад", "Морской город");
     }
 
-    /*1. тестирование get-метода отрицательный сценарий, если склада не существует (введен не тот id)
-    2. тестирование get-метода отрицательный сценарий, если id склада указан String*/
+    /* 1. тестирование get-метода отрицательный сценарий, если склада не существует (введен не тот id)
+     * 2. тестирование get-метода отрицательный сценарий, если id склада указан String*/
 
     @ParameterizedTest // краткая запись для нескольких тестов на один и тот же функционал с разными параметрами
     @CsvSource(delimiter = '|', value = { //value - наборы параметров, delimiter - разделитель
             "44|Склада с id = 44 не существует",
             "четыре|Номер склада должен быть указан числом! Ошибка ввода в: id, со значением value: четыре"})
     void testInvalidGet(String id, String expectedMessage) {
-        String resourceUrl = "http://localhost:" + port + "/stock/get/" + id;
+        String resourceUrl = "http://localhost:" + port + "/stock/" + id;
         ResponseEntity<ResponseDto<StockResponseDto>> response =
                 testRestTemplate.exchange(resourceUrl, HttpMethod.GET, null, STOCK_RESPONSE);
 
@@ -86,8 +101,31 @@ class StockTests {
     void testAdd() {
         String stockName = "Имя склада";
         String cityName = "Имя города";
+        //вытаскиваем id из метода создания Stock
+        Long id = createStock(stockName, cityName);
 
-        String resourceUrl = "http://localhost:" + port + "/stock/add";
+        testGet(String.valueOf(id), stockName, cityName);
+    }
+
+    @Test
+    void testDelete() {
+
+        String stockName = "Новый склад";
+        String cityName = "Новый город";
+
+        Long id = createStock(stockName, cityName);
+
+//        String resourceUrl = "http://localhost:" + port + "/stock/" + id;
+
+        //выполнение метода /del
+        testRestTemplate.exchange(resourceUrl + id, HttpMethod.DELETE, null, STOCK_RESPONSE);
+        testInvalidGet(String.valueOf(id), "Склада с id = " + id + " не существует");
+                    }
+
+    //получаем id только что созданной и записанной в бд сущности
+    private Long createStock(String stockName, String cityName) {
+
+        //String resourceUrl = "http://localhost:" + port + "/stock";
         //Тестовый объект для записи
         StockRequestDto request = StockRequestDto.builder()
                 .name(stockName)
@@ -101,27 +139,26 @@ class StockTests {
         Long id = testRestTemplate.postForObject(resourceUrl, requestEntity, Long.class);
 
         assertThat(id).isNotNull();
-
-        testGet(String.valueOf(id), stockName, cityName);
+        return id;
     }
 
     //выполняет get-запрос и проверку ожидаемого и запрашиваемого
-    private void testGet(String id, String stockName, String cityName) {
+    void testGet(String id, String stockName, String cityName) {
 
         //подставляем id(взятый из новосозданной сущности) в url и сверяем с тем, что получилось
-        String resourceUrlId = "http://localhost:" + port + "/stock/get/" + id;
+        // String resourceUrlId = "http://localhost:" + port + "/stock/" + id;
 
-        //Вместо Wrapper. Формируем ответ
+        //Вместо Wrapper. Формируем ответ (выполнение метода /get)
         ResponseEntity<ResponseDto<StockResponseDto>> response =
-                testRestTemplate.exchange(resourceUrlId, HttpMethod.GET, null, STOCK_RESPONSE);
+                testRestTemplate.exchange(resourceUrl + id, HttpMethod.GET, null, STOCK_RESPONSE);
         StockResponseDto data = response.getBody().getData();
 
         assertThat(data).isNotNull();
         assertThat(data.getName()).isEqualTo(stockName);
         assertThat(data.getCity()).isEqualTo(cityName);
     }
-
     /* Wrapper используем, как альтернативный способ получить вложенный ответ из response;
+     *  Альтернативный от ParameterizedTypeReference<<>>
      *  Урезанная копия ResponseDto
      *  Плохо тем, что (частино) копирует ResponseDto */
 
@@ -132,4 +169,7 @@ class StockTests {
     //использование Wrapper
     StockDtoWrapper wrapper = testRestTemplate.getForObject(resourceUrlId, StockDtoWrapper.class);
     StockResponseDto data = wrapper.data; */
+
+    //тест delete-метода
+
 }

@@ -21,7 +21,7 @@ public class StockController {
         this.stockService = stockService;
     }
 
-    @GetMapping(path = "get/{id}")
+    @GetMapping(path = "/{id}")
     @ResponseBody
     // ResponseDto<StockResponseDto> - через обработчик ошибок пропускаем рабочую DTO
     public ResponseDto<StockResponseDto> getById(@PathVariable Long id) {
@@ -32,14 +32,23 @@ public class StockController {
         return new ResponseDto<>(null, result); // если все нормально, отрабатывает StockResponseDto, на выходе имеем result, err == null
     }
 
-    @PostMapping(path = "add")
+    @PostMapping
     public Long addStock(@RequestBody StockRequestDto stockRequestDto) {
        return stockService.addStock(stockRequestDto);
     }
 
-    //Обработчик ошибок
+    @DeleteMapping(path = "/{id}")
+    public void deleteStock(@PathVariable Long id) {
+        log.debug("delete: started with: {}", id);
+        stockService.deleteStock(id);
+        log.info("delete: finished for id: {}", id);
+    }
+
+    /*
+     * Обработчик ошибок
+     * Ошибка взятия несуществующего ID */
     @ExceptionHandler
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ResponseStatus(HttpStatus.BAD_REQUEST) //Использование Bad request - самое оптимальное в handler
     public ResponseDto<StockResponseDto> handleValidateException(ValidateException ex) {
         String exMessage = ex.getMessage();
         //лог должен начинаться с имени метода! Тут имя метода: handleValidateException. Ошибки обрабатываются на уровне log.error!!
@@ -49,16 +58,17 @@ public class StockController {
     }
 
     /* Если ошибка обрабатывается Spring'ом, то надо ее использовать в handler,
-    соответственно, вывод сообщения через ResponseDto - text */
+     * соответственно, вывод сообщения через ResponseDto - text
+     * Обработка ошибки написания ID числом */
     @ExceptionHandler
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ResponseStatus(HttpStatus.BAD_REQUEST) //Использование Bad request - самое оптимальное в handler
     public ResponseDto<StockResponseDto> handleArgumentTypeMismatchException(MethodArgumentTypeMismatchException ex) {
         String exMessage = ex.getMessage();
         //лог должен начинаться с имени метода! Тут имя метода: handleArgumentTypeMismatchException
         log.error("handleArgumentTypeMismatchException: finished with exception : {}", exMessage);
         //в хорошем error handling'е в ошибке выводится то, что прилетело от клиента: параметр и значение.
-        return new ResponseDto<>("Номер склада должен быть указан числом! " + "Ошибка ввода в: " + ex.getParameter().getParameterName()
-                + ", со значением value: " + ex.getValue(), null);
+        return new ResponseDto<>("Номер склада должен быть указан числом! " +
+                "Ошибка ввода в: " + ex.getParameter().getParameterName() + ", со значением value: " + ex.getValue(), null);
     }
 }
 
