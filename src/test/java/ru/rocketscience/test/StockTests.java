@@ -112,7 +112,10 @@ class StockTests {
 
         String stockName = "Новый склад";
         String cityName = "Новый город";
+
         Long id = createStock(stockName, cityName);
+
+//        String resourceUrl = "http://localhost:" + port + "/stock/" + id;
 
         //выполнение метода /del
         testRestTemplate.exchange(resourceUrl + id, HttpMethod.DELETE, null, STOCK_RESPONSE);
@@ -133,7 +136,7 @@ class StockTests {
 
         String stockUpdName = "Update stock";
         String cityUpdName = "Update city";
-        //Long id = createStock(stockUpdName, cityUpdName);
+
         //создаем дто с новой сущностью
         StockRequestDto stockRequestDto = createStockRequestDto(stockUpdName, cityUpdName);
 
@@ -196,7 +199,11 @@ class StockTests {
    /* public static class StockDtoWrapper {
         public StockResponseDto data;
     }
+
     //использование Wrapper
     StockDtoWrapper wrapper = testRestTemplate.getForObject(resourceUrlId, StockDtoWrapper.class);
     StockResponseDto data = wrapper.data; */
+
+    //тест delete-метода
+
 

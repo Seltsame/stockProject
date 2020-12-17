@@ -15,6 +15,7 @@ import ru.rocketscience.test.service.StockService;
 @RequestMapping(path = "stock")
 @Slf4j //включаем логировнаие
 public class StockController {
+
     private final StockService stockService;
 
     public StockController(StockService stockService) {
@@ -23,11 +24,11 @@ public class StockController {
 
     @GetMapping(path = "/{id}")
     @ResponseBody
-    // ResponseDto<StockResponseDto> - через обработчик ошибок пропускаем рабочую DTO
+    // ResponseDto<StockResponseDto> - через спец DTO (которая разделяется на err и data) пропускаем рабочую DTO
     public ResponseDto<StockResponseDto> getById(@PathVariable Long id) {
         //ставим log.debug(входящие параметры лучше логировать на уровне debug): стартуем get-запрос с id, который попадает сюда
         log.debug("get: started with: {}", id);
-        StockResponseDto result = stockService.getById(id);
+        StockResponseDto result = stockService.getStockById(id);
         log.info("get: finished for id: {} with: {}", id, result); //log.info: выводим результат работы get-запроса
         return new ResponseDto<>(null, result); // если все нормально, отрабатывает StockResponseDto, на выходе имеем result, err == null
     }

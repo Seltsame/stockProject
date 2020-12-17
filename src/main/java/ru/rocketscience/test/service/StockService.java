@@ -20,7 +20,7 @@ public class StockService {
     private final StockRepository stockRepository;
     private final StockMapper stockMapper;
 
-    public StockResponseDto getById(Long id) {
+    public StockResponseDto getStockById(Long id) {
         Optional<Stock> entityToGet = stockRepository.findById(id);
         if (!entityToGet.isPresent()) {
             throw new ValidateException("Склада с id = " + id + " не существует");
