@@ -7,6 +7,7 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import ru.rocketscience.test.ValidateException;
 import ru.rocketscience.test.dto.ProductResponseDto;
 import ru.rocketscience.test.dto.ResponseDto;
+import ru.rocketscience.test.dto.request.ProductRequestDto;
 import ru.rocketscience.test.service.ProductService;
 
 @RestController
@@ -28,6 +29,11 @@ public class ProductController {
         ProductResponseDto result = productService.getProductById(id);
         log.info("get: finished with: {}, {}", id, result);
         return new ResponseDto<>(null, result); //если ошибки нет, то возвращается result
+    }
+
+    @PostMapping
+    public Long addProduct(@RequestBody ProductRequestDto productRequestDto) {
+        return productService.addProduct(productRequestDto);
     }
 
     @ExceptionHandler

@@ -43,6 +43,7 @@ class StockTests extends BaseApplicationTest {
     //тестирование get-метода положительный сценарий
     @Test
     void testSimpleGet() {
+
         testGet("2", "Морской склад", "Морской город");
     }
 
@@ -86,8 +87,8 @@ class StockTests extends BaseApplicationTest {
 
         Long stockId = createStock(nameToDel, cityNameToDel);
 
-        //выполнение метода /del
-        testRestTemplate.exchange(resourceUrl + stockId, HttpMethod.DELETE, null, STOCK_RESPONSE);
+        //выполнение метода /del Void.class - тк метод контроллера void
+        testRestTemplate.exchange(resourceUrl + stockId, HttpMethod.DELETE, null, Void.class);
 
         //проверка на выполнение метода delete()
         testInvalidGet(String.valueOf(stockId), "Склада с id = " + stockId + " не существует");

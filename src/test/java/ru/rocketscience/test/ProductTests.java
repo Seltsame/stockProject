@@ -49,12 +49,11 @@ public class ProductTests extends BaseApplicationTest {
     @Test
     void testAdd() {
 
-        String nameToAd = "Товар на добавление";
-        BigDecimal priceToAd = BigDecimal.valueOf(666);
+        String nameToAdd = "Товар на добавление";
+        BigDecimal priceToAdd = BigDecimal.valueOf(666);
 
-        Long id = createProduct(nameToAd, priceToAd);
+        Long id = createProduct(nameToAdd, priceToAdd);
 
-        assertThat(id).isNotNull();
         testGet(String.valueOf(id), "Товар на добавление", BigDecimal.valueOf(666));
     }
 
@@ -67,8 +66,8 @@ public class ProductTests extends BaseApplicationTest {
 
         Long productId = createProduct(nameToDel, priceToDel);
 
-        //выполнение метода /del
-        testRestTemplate.exchange(resourceUrl + productId, HttpMethod.DELETE, null, PRODUCT_RESPONSE);
+        //выполнение метода /del Void.class - тк метод контроллера void
+        testRestTemplate.exchange(resourceUrl + productId, HttpMethod.DELETE, null, Void.class);
 
         testInvalidGet(String.valueOf(productId), "Товара с id = " + productId + " не существует");
     }
@@ -89,7 +88,7 @@ public class ProductTests extends BaseApplicationTest {
         ProductRequestDto requestEntityUpd = createProductRequestDto(nameToUpd, priceToUpd);
 
         RequestEntity<ProductRequestDto> requestEntity
-                = RequestEntity.post(URI.create(resourceUrl + productId)).contentType(MediaType.APPLICATION_JSON).body(requestEntityUpd);
+                = RequestEntity.put(URI.create(resourceUrl + productId)).contentType(MediaType.APPLICATION_JSON).body(requestEntityUpd);
 
         ResponseEntity<Void> responseEntity = testRestTemplate.exchange(requestEntity, Void.class);
 
