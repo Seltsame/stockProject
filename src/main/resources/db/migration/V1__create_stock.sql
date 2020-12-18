@@ -1,3 +1,4 @@
+/* Создаём таблицу stock в базу данных с помощью flyWay */
 CREATE TABLE IF NOT EXISTS stock (
 
     id BIGSERIAL PRIMARY KEY,

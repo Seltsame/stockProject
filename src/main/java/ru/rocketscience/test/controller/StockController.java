@@ -75,7 +75,7 @@ public class StockController {
         //лог должен начинаться с имени метода! Тут имя метода: handleArgumentTypeMismatchException
         log.error("handleArgumentTypeMismatchException: finished with exception : {}", exMessage);
         //в хорошем error handling'е в ошибке выводится то, что прилетело от клиента: параметр и значение.
-        return new ResponseDto<>("Номер склада должен быть указан числом! " +
+        return new ResponseDto<>("ID склада должен быть указан числом! " +
                 "Ошибка ввода в: " + ex.getParameter().getParameterName() + ", со значением value: " + ex.getValue(), null);
     }
 }
