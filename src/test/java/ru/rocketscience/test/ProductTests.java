@@ -1,20 +1,22 @@
 package ru.rocketscience.test;
 
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import ru.rocketscience.test.dto.ProductResponseDto;
 import ru.rocketscience.test.dto.ResponseDto;
+import ru.rocketscience.test.dto.request.ProductRequestDto;
+import ru.rocketscience.test.model.Product;
+import ru.rocketscience.test.repository.ProductRepository;
 
 import java.math.BigDecimal;
+import java.net.URI;
+import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class ProductTests extends BaseApplicationTest {
 
@@ -22,12 +24,6 @@ public class ProductTests extends BaseApplicationTest {
             new ParameterizedTypeReference<>() {
             };
 
-    public static String resourceUrl;
-
-    @BeforeEach
-    public void setupUrl() {
-        resourceUrl = "http://localhost:" + port + "/product/";
-    }
 
     @Test
     void testSimpleGet() {
@@ -39,6 +35,7 @@ public class ProductTests extends BaseApplicationTest {
     @CsvSource(delimiter = '|', value = {
             "47|Товара с id = 47 не существует!",
             "пять|ID товара должен быть указан числом! Ошибка ввода в: id, со значением value: пять"})
+        //тест-метод /get с неправильным id
     void testInvalidGet(String id, String expectedMessage) {
 
         ResponseEntity<ResponseDto<ProductResponseDto>> response
@@ -48,6 +45,59 @@ public class ProductTests extends BaseApplicationTest {
         assertThat(response.getBody().getError()).isEqualTo(expectedMessage);
     }
 
+    //тест метода /add
+    @Test
+    void testAdd() {
+
+        String nameToAd = "Товар на добавление";
+        BigDecimal priceToAd = BigDecimal.valueOf(666);
+
+        Long id = createProduct(nameToAd, priceToAd);
+
+        assertThat(id).isNotNull();
+        testGet(String.valueOf(id), "Товар на добавление", BigDecimal.valueOf(666));
+    }
+
+    //тест delete-метода
+    @Test
+    void testDelete() {
+
+        String nameToDel = "Товар на удаление";
+        BigDecimal priceToDel = BigDecimal.valueOf(777);
+
+        Long productId = createProduct(nameToDel, priceToDel);
+
+        //выполнение метода /del
+        testRestTemplate.exchange(resourceUrl + productId, HttpMethod.DELETE, null, PRODUCT_RESPONSE);
+
+        testInvalidGet(String.valueOf(productId), "Товара с id = " + productId + " не существует");
+    }
+
+    //тест update-метода
+    @Test
+    void testUpdate() {
+
+        String nameToAd = "Название товара";
+        BigDecimal priceToAd = BigDecimal.valueOf(1001);
+
+        Long productId = createProduct(nameToAd, priceToAd);
+        testGet(String.valueOf(productId), "Название товара", BigDecimal.valueOf(1001));
+
+        String nameToUpd = "Новое название товара";
+        BigDecimal priceToUpd = BigDecimal.valueOf(100500);
+
+        ProductRequestDto requestEntityUpd = createProductRequestDto(nameToUpd, priceToUpd);
+
+        RequestEntity<ProductRequestDto> requestEntity
+                = RequestEntity.post(URI.create(resourceUrl + productId)).contentType(MediaType.APPLICATION_JSON).body(requestEntityUpd);
+
+        ResponseEntity<Void> responseEntity = testRestTemplate.exchange(requestEntity, Void.class);
+
+        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
+        testGet(String.valueOf(productId), nameToUpd, priceToUpd);
+    }
+
+    //обезличенный get-test
     void testGet(String id, String name, BigDecimal price) {
 
         ResponseEntity<ResponseDto<ProductResponseDto>> response
@@ -57,5 +107,30 @@ public class ProductTests extends BaseApplicationTest {
         assertThat(data).isNotNull();
         assertThat(data.getName()).isEqualTo(name);
         assertThat(data.getPrice()).isEqualTo(price);
+    }
+
+    //Тестовый объект для записи
+    private ProductRequestDto createProductRequestDto(String name, BigDecimal price) {
+
+        return ProductRequestDto.builder()
+                .name(name)
+                .price(price)
+                .build();
+    }
+
+    //получение id свежезаписанной entity в бд
+    private Long createProduct(String name, BigDecimal price) {
+        ProductRequestDto productRequest = createProductRequestDto(name, price);
+
+        //формирует Http-запрос с DTO новой сущности для получения данных об Entity
+        RequestEntity<ProductRequestDto> requestEntity =
+                RequestEntity.post(URI.create(resourceUrl)).contentType(MediaType.APPLICATION_JSON).body(productRequest);
+
+        /* получаем только id из бд, чтобы не тащить все данные оттуда (в контроллере надо вернуть значение id после записи
+         в бд)*/
+        Long id = testRestTemplate.postForObject(resourceUrl, requestEntity, Long.class);
+
+        assertThat(id).isNotNull();
+        return id;
     }
 }

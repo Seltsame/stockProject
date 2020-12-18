@@ -1,5 +1,6 @@
 package ru.rocketscience.test;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
@@ -20,8 +21,6 @@ public class BaseApplicationTest {
 
     //объект для фиксации типа generic, чтобы метод getBody() возвращал нужный типизированный результат
     //(возможно использование Wrapper)
-
-
     @Container
     //бин с настройками бд (Username, Password и dbName теперь берутся из Container == @DynamicPropertySource)
     public static PostgreSQLContainer postgreSQLContainer = new PostgreSQLContainer("postgres:11.10");
@@ -39,4 +38,11 @@ public class BaseApplicationTest {
     //добавление рандомного порта на тест
     @LocalServerPort
     protected int port;
+
+    public static String resourceUrl;
+
+    @BeforeEach
+    public void setupUrl() {
+        resourceUrl = "http://localhost:" + port + "/product/";
+    }
 }
