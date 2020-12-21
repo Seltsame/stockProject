@@ -28,27 +28,27 @@ public class StockController {
     public ResponseDto<StockResponseDto> getById(@PathVariable Long id) {
         //ставим log.debug(входящие параметры лучше логировать на уровне debug): стартуем get-запрос с id, который попадает сюда
         log.debug("get: started with: {}", id);
-        StockResponseDto result = stockService.getStockById(id);
+        StockResponseDto result = stockService.getById(id);
         log.info("get: finished for id: {} with: {}", id, result); //log.info: выводим результат работы get-запроса
         return new ResponseDto<>(null, result); // если все нормально, отрабатывает StockResponseDto, на выходе имеем result, err == null
     }
 
     @PostMapping
-    public Long addStock(@RequestBody StockRequestDto stockRequestDto) {
-        return stockService.addStock(stockRequestDto);
+    public Long add(@RequestBody StockRequestDto stockRequestDto) {
+        return stockService.add(stockRequestDto);
     }
 
     @DeleteMapping(path = "/{id}")
-    public void deleteStock(@PathVariable Long id) {
+    public void delete(@PathVariable Long id) {
         log.debug("delete: started with: {}", id);
-        stockService.deleteStock(id);
+        stockService.delete(id);
         log.info("delete: finished for id: {}", id);
     }
 
     @PutMapping(path = "/{id}")
-    public void updateStock(@RequestBody StockRequestDto stockRequestDto, @PathVariable Long id) {
+    public void update(@RequestBody StockRequestDto stockRequestDto, @PathVariable Long id) {
         log.debug("update: started with: {}", id);
-        stockService.updateStock(id, stockRequestDto);
+        stockService.update(id, stockRequestDto);
         log.info("update: finished for id: {}", id);
     }
 

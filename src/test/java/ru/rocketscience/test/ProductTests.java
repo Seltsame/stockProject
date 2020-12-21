@@ -3,18 +3,14 @@ package ru.rocketscience.test;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import ru.rocketscience.test.dto.ProductResponseDto;
 import ru.rocketscience.test.dto.ResponseDto;
 import ru.rocketscience.test.dto.request.ProductRequestDto;
-import ru.rocketscience.test.model.Product;
-import ru.rocketscience.test.repository.ProductRepository;
 
 import java.math.BigDecimal;
 import java.net.URI;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

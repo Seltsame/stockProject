@@ -11,7 +11,6 @@ import ru.rocketscience.test.model.Product;
 import ru.rocketscience.test.repository.ProductRepository;
 
 import javax.transaction.Transactional;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -20,35 +19,32 @@ public class ProductService {
     private final ProductRepository productRepository;
     private final ProductMapper productMapper;
 
-    public ProductResponseDto getProductById(Long id) {
-        Optional<Product> entityToGet = productRepository.findById(id);
-        if (!entityToGet.isPresent()) {
-            throw new ValidateException("Товара с id = " + id + " не существует!");
-        }
-        return productMapper.fromEntity(entityToGet.get());
+    public ProductResponseDto getById(Long id) {
+        Product productToGet = productRepository.findById(id).orElseThrow(()
+                -> new ValidateException("Товара с id = " + id + " не существует!"));
+        return productMapper.fromEntity(productToGet);
     }
 
-    public Long addProduct(ProductRequestDto productRequestDto) {
+    public Long add(ProductRequestDto productRequestDto) {
         Product productToSave = productRepository.save(productMapper.toEntity(productRequestDto));
         return productToSave.getId();
     }
 
     @Transactional
-    public void deleteProduct(Long id) {
+    public void delete(Long id) {
         try {
             productRepository.deleteById(id);
         } catch (EmptyResultDataAccessException e) {
-            throw new ValidateException("Товара с id = " + id + " не существует");
+            throw new ValidateException("Товара с id = " + id + " не существует!");
         }
     }
 
-    public void updateProduct(Long id, ProductRequestDto productRequestDto) {
-        Optional<Product> entityToUpd = productRepository.findById(id);
-        if(!entityToUpd.isPresent()) {
-            throw new ValidateException("Товара с id = " + id + " не существует!");
-        }
-        entityToUpd.get().setName(productRequestDto.getName());
-        entityToUpd.get().setPrice(productRequestDto.getPrice());
-        productRepository.save(entityToUpd.get());
+    @Transactional
+    public void update(Long id, ProductRequestDto productRequestDto) {
+        Product productToUpd = productRepository.findById(id).orElseThrow(()
+                -> new ValidateException("Товара с id = " + id + " не существует!"));
+        productToUpd.setName(productRequestDto.getName());
+        productToUpd.setPrice(productRequestDto.getPrice());
+        productRepository.save(productToUpd);
     }
 }

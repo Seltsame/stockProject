@@ -2,7 +2,6 @@ package ru.rocketscience.test.controller;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import ru.rocketscience.test.ValidateException;
@@ -27,27 +26,27 @@ public class ProductController {
     // ResponseDto<StockResponseDto> - через спец DTO (которая разделяется на err и data) пропускаем рабочую DTO
     public ResponseDto<ProductResponseDto> getById(@PathVariable Long id) {
         log.debug("get: started with: {}", id);
-        ProductResponseDto result = productService.getProductById(id);
+        ProductResponseDto result = productService.getById(id);
         log.info("get: finished with: {}, {}", id, result);
         return new ResponseDto<>(null, result); //если ошибки нет, то возвращается result
     }
 
     @PostMapping
-    public Long addProduct(@RequestBody ProductRequestDto productRequestDto) {
-        return productService.addProduct(productRequestDto);
+    public Long add(@RequestBody ProductRequestDto productRequestDto) {
+        return productService.add(productRequestDto);
     }
 
     @DeleteMapping(path = "{id}")
-    public void deleteProduct(@PathVariable Long id) {
+    public void delete(@PathVariable Long id) {
         log.debug("delete: started with: {}", id);
-        productService.deleteProduct(id);
+        productService.delete(id);
         log.info("delete: finished with: {}", id);
     }
 
     @PutMapping(path = "{id}")
-    public void updateProduct(@RequestBody ProductRequestDto productRequestDto, @PathVariable Long id) {
+    public void update(@RequestBody ProductRequestDto productRequestDto, @PathVariable Long id) {
         log.debug("update: starter with: + {}", id);
-        productService.updateProduct(id, productRequestDto);
+        productService.update(id, productRequestDto);
         log.info("update: finished for id: {}", id);
     }
 

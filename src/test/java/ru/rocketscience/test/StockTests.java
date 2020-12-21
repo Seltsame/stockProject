@@ -52,7 +52,7 @@ class StockTests extends BaseApplicationTest {
 
     @ParameterizedTest // краткая запись для нескольких тестов на один и тот же функционал с разными параметрами
     @CsvSource(delimiter = '|', value = { //value - наборы параметров, delimiter - разделитель
-            "44|Склада с id = 44 не существует",
+            "44|Склада с id = 44 не существует!",
             "четыре|ID склада должен быть указан числом! Ошибка ввода в: id, со значением value: четыре"})
     //тест-метод /get с неправильным id
     void testInvalidGet(String id, String expectedMessage) {
@@ -91,7 +91,7 @@ class StockTests extends BaseApplicationTest {
         testRestTemplate.exchange(resourceUrl + stockId, HttpMethod.DELETE, null, Void.class);
 
         //проверка на выполнение метода delete()
-        testInvalidGet(String.valueOf(stockId), "Склада с id = " + stockId + " не существует");
+        testInvalidGet(String.valueOf(stockId), "Склада с id = " + stockId + " не существует!");
     }
 
     //тест update-метода
