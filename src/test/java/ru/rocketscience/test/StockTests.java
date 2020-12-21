@@ -4,18 +4,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.boot.web.server.LocalServerPort;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 import ru.rocketscience.test.dto.ResponseDto;
 import ru.rocketscience.test.dto.StockResponseDto;
 import ru.rocketscience.test.dto.request.StockRequestDto;
@@ -24,35 +14,15 @@ import java.net.URI;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-//RANDOM_PORT, чтобы использовался случайный порт, а не 8080.
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ActiveProfiles("test") //выбор профиля работы приложения, прописанного в properties
-@Testcontainers
-class StockTests {
+class StockTests extends BaseApplicationTest {
 
-    //объект для фиксации типа generic, чтобы метод getBody() возвращал нужный типизированный результат
-    //(возможно использование Wrapper)
+    /* класс-обёртка, позволяющая для generic-типов сохранить, что внутри, чтобы спринг не забыл о том, какие исходные типы были вложены
+    Возвращает тип, представляющий прямой суперкласс сущности (класс, интерфейс, примитивный тип или void), представленный этим классом.
+    Если суперкласс является параметризованным типом, то возвращается объект Type должен точно отражать фактические параметры типа,
+    используемые в источнике код */
     public static final ParameterizedTypeReference<ResponseDto<StockResponseDto>> STOCK_RESPONSE =
             new ParameterizedTypeReference<>() {
             };
-
-    @Container
-    //бин с настройками бд (Username, Password и dbName теперь берутся из Container == @DynamicPropertySource)
-    public static PostgreSQLContainer postgreSQLContainer = new PostgreSQLContainer("postgres:11.10");
-
-    @DynamicPropertySource //подключение к бд в Docker
-    static void postgresqlProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgreSQLContainer::getJdbcUrl);
-        registry.add("spring.datasource.password", postgreSQLContainer::getPassword);
-        registry.add("spring.datasource.username", postgreSQLContainer::getUsername);
-    }
-
-    @Autowired
-    TestRestTemplate testRestTemplate; //Http-клиент
-
-    //добавление рандомного порта на тест
-    @LocalServerPort
-    protected int port;
 
     public static String resourceUrl; //делаем переменную статиком и пишем туда результат выполнения метода setupUrl
 
@@ -72,7 +42,8 @@ class StockTests {
 
     //тестирование get-метода положительный сценарий
     @Test
-    void testGet() {
+    void testSimpleGet() {
+
         testGet("2", "Морской склад", "Морской город");
     }
 
@@ -81,8 +52,9 @@ class StockTests {
 
     @ParameterizedTest // краткая запись для нескольких тестов на один и тот же функционал с разными параметрами
     @CsvSource(delimiter = '|', value = { //value - наборы параметров, delimiter - разделитель
-            "44|Склада с id = 44 не существует",
-            "четыре|Номер склада должен быть указан числом! Ошибка ввода в: id, со значением value: четыре"})
+            "44|Склада с id = 44 не существует!",
+            "четыре|ID склада должен быть указан числом! Ошибка ввода в: id, со значением value: четыре"})
+    //тест-метод /get с неправильным id
     void testInvalidGet(String id, String expectedMessage) {
 
         // Формируем ответ сервера (выполнение метода /get при неправильном id)
@@ -110,30 +82,32 @@ class StockTests {
     @Test
     void testDelete() {
 
-        String stockName = "Новый склад";
-        String cityName = "Новый город";
+        String nameToDel = "Новый склад";
+        String cityNameToDel = "Новый город";
 
-        Long id = createStock(stockName, cityName);
+        Long stockId = createStock(nameToDel, cityNameToDel);
 
-//        String resourceUrl = "http://localhost:" + port + "/stock/" + id;
+        //выполнение метода /del Void.class - тк метод контроллера void
+        testRestTemplate.exchange(resourceUrl + stockId, HttpMethod.DELETE, null, Void.class);
 
-        //выполнение метода /del
-        testRestTemplate.exchange(resourceUrl + id, HttpMethod.DELETE, null, STOCK_RESPONSE);
-
-        testInvalidGet(String.valueOf(id), "Склада с id = " + id + " не существует");
+        //проверка на выполнение метода delete()
+        testInvalidGet(String.valueOf(stockId), "Склада с id = " + stockId + " не существует!");
     }
 
     //тест update-метода
     @Test
     void testUpdate() {
 
+        //старые данные
         String stockName = "Имя склада";
         String cityName = "Имя города";
 
         Long id = createStock(stockName, cityName);
 
+        //проверка на то существование
         testGet(String.valueOf(id), stockName, cityName);
 
+        //новые данные для перезаписи
         String stockUpdName = "Update stock";
         String cityUpdName = "Update city";
 
@@ -147,6 +121,7 @@ class StockTests {
         //выполнение метода /put и ответ от сервера
         ResponseEntity<Void> responseEntity = testRestTemplate.exchange(requestEntityUpd, Void.class);
 
+        //проверка ответа сервера
         assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
 
         //выполнение теста get() чтобы проверить, берётся Entity с новыми данными
@@ -167,11 +142,11 @@ class StockTests {
         assertThat(data.getCity()).isEqualTo(cityName);
     }
 
-    //получаем id только что созданной и записанной в бд сущности
+    //Создаём entity и получаем id entity из бд
     private Long createStock(String stockName, String cityName) {
 
         StockRequestDto request = createStockRequestDto(stockName, cityName);
-        //формирует Http-запрос для получения данных об Entity
+        //формирует Http-запрос с DTO новой сущности для получения данных об Entity
         RequestEntity<StockRequestDto> requestEntity =
                 RequestEntity.post(URI.create(resourceUrl)).contentType(MediaType.APPLICATION_JSON).body(request);
         /* получаем только id из бд, чтобы не тащить все данные оттуда (в контроллере надо вернуть значение id после записи
@@ -184,11 +159,11 @@ class StockTests {
 
     //Тестовый объект для записи
     private StockRequestDto createStockRequestDto(String stockName, String cityName) {
-        StockRequestDto request = StockRequestDto.builder()
+
+        return StockRequestDto.builder()
                 .name(stockName)
                 .city(cityName)
                 .build();
-        return request;
     }
 }
 /* Wrapper используем, как альтернативный способ получить вложенный ответ из response;
@@ -204,6 +179,6 @@ class StockTests {
     StockDtoWrapper wrapper = testRestTemplate.getForObject(resourceUrlId, StockDtoWrapper.class);
     StockResponseDto data = wrapper.data; */
 
-    //тест delete-метода
+
 
 

@@ -15,6 +15,7 @@ import ru.rocketscience.test.service.StockService;
 @RequestMapping(path = "stock")
 @Slf4j //включаем логировнаие
 public class StockController {
+
     private final StockService stockService;
 
     public StockController(StockService stockService) {
@@ -23,7 +24,7 @@ public class StockController {
 
     @GetMapping(path = "/{id}")
     @ResponseBody
-    // ResponseDto<StockResponseDto> - через обработчик ошибок пропускаем рабочую DTO
+    // ResponseDto<StockResponseDto> - через спец DTO (которая разделяется на err и data) пропускаем рабочую DTO
     public ResponseDto<StockResponseDto> getById(@PathVariable Long id) {
         //ставим log.debug(входящие параметры лучше логировать на уровне debug): стартуем get-запрос с id, который попадает сюда
         log.debug("get: started with: {}", id);
@@ -33,21 +34,21 @@ public class StockController {
     }
 
     @PostMapping
-    public Long addStock(@RequestBody StockRequestDto stockRequestDto) {
-        return stockService.addStock(stockRequestDto);
+    public Long add(@RequestBody StockRequestDto stockRequestDto) {
+        return stockService.add(stockRequestDto);
     }
 
     @DeleteMapping(path = "/{id}")
-    public void deleteStock(@PathVariable Long id) {
+    public void delete(@PathVariable Long id) {
         log.debug("delete: started with: {}", id);
-        stockService.deleteStock(id);
+        stockService.delete(id);
         log.info("delete: finished for id: {}", id);
     }
 
     @PutMapping(path = "/{id}")
-    public void updateStock(@RequestBody StockRequestDto stockRequestDto, @PathVariable Long id) {
+    public void update(@RequestBody StockRequestDto stockRequestDto, @PathVariable Long id) {
         log.debug("update: started with: {}", id);
-        stockService.updateStock(id, stockRequestDto);
+        stockService.update(id, stockRequestDto);
         log.info("update: finished for id: {}", id);
     }
 
@@ -74,7 +75,7 @@ public class StockController {
         //лог должен начинаться с имени метода! Тут имя метода: handleArgumentTypeMismatchException
         log.error("handleArgumentTypeMismatchException: finished with exception : {}", exMessage);
         //в хорошем error handling'е в ошибке выводится то, что прилетело от клиента: параметр и значение.
-        return new ResponseDto<>("Номер склада должен быть указан числом! " +
+        return new ResponseDto<>("ID склада должен быть указан числом! " +
                 "Ошибка ввода в: " + ex.getParameter().getParameterName() + ", со значением value: " + ex.getValue(), null);
     }
 }
