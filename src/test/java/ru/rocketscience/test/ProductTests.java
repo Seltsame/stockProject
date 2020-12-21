@@ -69,7 +69,7 @@ public class ProductTests extends BaseApplicationTest {
         //выполнение метода /del Void.class - тк метод контроллера void
         testRestTemplate.exchange(resourceUrl + productId, HttpMethod.DELETE, null, Void.class);
 
-        testInvalidGet(String.valueOf(productId), "Товара с id = " + productId + " не существует");
+        testInvalidGet(String.valueOf(productId), "Товара с id = " + productId + " не существует!");
     }
 
     //тест update-метода
@@ -85,12 +85,12 @@ public class ProductTests extends BaseApplicationTest {
         String nameToUpd = "Новое название товара";
         BigDecimal priceToUpd = BigDecimal.valueOf(100500);
 
-        ProductRequestDto requestEntityUpd = createProductRequestDto(nameToUpd, priceToUpd);
+        ProductRequestDto productRequestDto = createProductRequestDto(nameToUpd, priceToUpd);
 
-        RequestEntity<ProductRequestDto> requestEntity
-                = RequestEntity.put(URI.create(resourceUrl + productId)).contentType(MediaType.APPLICATION_JSON).body(requestEntityUpd);
+        RequestEntity<ProductRequestDto> requestEntityUpd
+                = RequestEntity.put(URI.create(resourceUrl + productId)).contentType(MediaType.APPLICATION_JSON).body(productRequestDto);
 
-        ResponseEntity<Void> responseEntity = testRestTemplate.exchange(requestEntity, Void.class);
+        ResponseEntity<Void> responseEntity = testRestTemplate.exchange(requestEntityUpd, Void.class);
 
         assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
         testGet(String.valueOf(productId), nameToUpd, priceToUpd);

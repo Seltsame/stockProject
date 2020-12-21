@@ -34,6 +34,7 @@ public class StockService {
         return addStock.getId();
     }
 
+    //При отсутствии в бд id удаляемой сукщности, будет выброшена следующая ошибка:
     @Transactional
     public void deleteStock(Long id) {
         try {
@@ -52,6 +53,6 @@ public class StockService {
         //пишем напрямую в сущность новые пришедшие данные
         entityToUpdate.get().setCity(stockRequestDto.getCity());
         entityToUpdate.get().setName(stockRequestDto.getName());
-        stockRepository.save(entityToUpdate.get()); //entityToUpdate.get() - как раз Entity
+        stockRepository.save(entityToUpdate.get()); //entityToUpdate.get() - как раз Entity. Сохраняем в бд
     }
 }

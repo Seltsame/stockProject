@@ -2,6 +2,7 @@ package ru.rocketscience.test.controller;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import ru.rocketscience.test.ValidateException;
@@ -36,6 +37,20 @@ public class ProductController {
         return productService.addProduct(productRequestDto);
     }
 
+    @DeleteMapping(path = "{id}")
+    public void deleteProduct(@PathVariable Long id) {
+        log.debug("delete: started with: {}", id);
+        productService.deleteProduct(id);
+        log.info("delete: finished with: {}", id);
+    }
+
+    @PutMapping(path = "{id}")
+    public void updateProduct(@RequestBody ProductRequestDto productRequestDto, @PathVariable Long id) {
+        log.debug("update: starter with: + {}", id);
+        productService.updateProduct(id, productRequestDto);
+        log.info("update: finished for id: {}", id);
+    }
+
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ResponseDto<ProductResponseDto> handlerValidateExceptionProduct(ValidateException ex) {
@@ -52,7 +67,6 @@ public class ProductController {
         return new ResponseDto<>("ID товара должен быть указан числом! "
                 + "Ошибка ввода в: " + ex.getParameter().getParameterName() + ", со значением value: " + ex.getValue(), null);
     }
-
 }
 
 
