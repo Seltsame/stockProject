@@ -32,6 +32,7 @@ dependencies {
     implementation 'io.springfox:springfox-swagger2:2.7.0' //подключение Swagger
     implementation 'io.springfox:springfox-swagger-ui:2.7.0' //подключение Swagger
     compileOnly 'org.projectlombok:lombok'
+    compile 'commons-io:commons-io:2.8.0' //вызов IOUtils.toString в Util классе
     runtimeOnly 'org.postgresql:postgresql'
     annotationProcessor 'org.projectlombok:lombok'
     annotationProcessor 'org.mapstruct:mapstruct-processor:1.4.1.Final' //подключение mapStruct

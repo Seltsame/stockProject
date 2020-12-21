@@ -5,6 +5,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
+import ru.rocketscience.test.controller.ProductController;
 import ru.rocketscience.test.dto.ProductResponseDto;
 import ru.rocketscience.test.dto.ResponseDto;
 import ru.rocketscience.test.dto.request.ProductRequestDto;
@@ -20,6 +21,15 @@ public class ProductTests extends BaseApplicationTest {
             new ParameterizedTypeReference<>() {
             };
 
+    //создаем и подставляем значения в RequestDto из преобразованного json: NewProduct.json
+    public static final ProductRequestDto CREATE_PRODUCT
+            = getFromJson("/product/NewProduct.json", ProductRequestDto.class);
+
+    //метод для простоты вызова метода getObjectFromResourceJson();
+    private static <T> T getFromJson(String jsonFileName, Class<T> dtoClass) {
+        return Utils.getObjectFromResourceJson(ProductController.class, jsonFileName, dtoClass);
+    }
+
 
     @Test
     void testSimpleGet() {
@@ -31,11 +41,13 @@ public class ProductTests extends BaseApplicationTest {
     @CsvSource(delimiter = '|', value = {
             "47|Товара с id = 47 не существует!",
             "пять|ID товара должен быть указан числом! Ошибка ввода в: id, со значением value: пять"})
+
         //тест-метод /get с неправильным id
     void testInvalidGet(String id, String expectedMessage) {
 
         ResponseEntity<ResponseDto<ProductResponseDto>> response
-                = testRestTemplate.exchange(resourceUrl + id, HttpMethod.GET, null, PRODUCT_RESPONSE);
+                = testRestTemplate.exchange(resourceUrl + id, HttpMethod.GET, null,
+                PRODUCT_RESPONSE);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(response.getBody().getError()).isEqualTo(expectedMessage);
@@ -45,22 +57,23 @@ public class ProductTests extends BaseApplicationTest {
     @Test
     void testAdd() {
 
-        String nameToAdd = "Товар на добавление";
-        BigDecimal priceToAdd = BigDecimal.valueOf(666);
+        //подставляем значения из преобразованного json: NewProduct.json
+        Long id = createProduct(CREATE_PRODUCT.getName(),
+                CREATE_PRODUCT.getPrice());
 
-        Long id = createProduct(nameToAdd, priceToAdd);
-
-        testGet(String.valueOf(id), "Товар на добавление", BigDecimal.valueOf(666));
+        //подставляем значения из преобразованного json: NewProduct.json
+        testGet(String.valueOf(id),
+                CREATE_PRODUCT.getName(),
+                CREATE_PRODUCT.getPrice());
     }
 
     //тест delete-метода
     @Test
     void testDelete() {
 
-        String nameToDel = "Товар на удаление";
-        BigDecimal priceToDel = BigDecimal.valueOf(777);
-
-        Long productId = createProduct(nameToDel, priceToDel);
+        Long productId = createProduct(
+                CREATE_PRODUCT.getName(),
+                CREATE_PRODUCT.getPrice());
 
         //выполнение метода /del Void.class - тк метод контроллера void
         testRestTemplate.exchange(resourceUrl + productId, HttpMethod.DELETE, null, Void.class);
@@ -72,24 +85,29 @@ public class ProductTests extends BaseApplicationTest {
     @Test
     void testUpdate() {
 
-        String nameToAd = "Название товара";
-        BigDecimal priceToAd = BigDecimal.valueOf(1001);
+        Long productId = createProduct(
+                CREATE_PRODUCT.getName(),
+                CREATE_PRODUCT.getPrice());
 
-        Long productId = createProduct(nameToAd, priceToAd);
-        testGet(String.valueOf(productId), "Название товара", BigDecimal.valueOf(1001));
+        testGet(String.valueOf(productId),
+                CREATE_PRODUCT.getName(),
+                CREATE_PRODUCT.getPrice());
 
-        String nameToUpd = "Новое название товара";
-        BigDecimal priceToUpd = BigDecimal.valueOf(100500);
-
-        ProductRequestDto productRequestDto = createProductRequestDto(nameToUpd, priceToUpd);
+        //создаем DTO новой сущностью и подставляем значения из преобразованного json: ProductToUpdate.json
+        ProductRequestDto createProductUpd
+                = getFromJson("/product/ProductToUpdate.json", ProductRequestDto.class);
 
         RequestEntity<ProductRequestDto> requestEntityUpd
-                = RequestEntity.put(URI.create(resourceUrl + productId)).contentType(MediaType.APPLICATION_JSON).body(productRequestDto);
+                = RequestEntity.put(URI.create(resourceUrl + productId)).contentType(MediaType.APPLICATION_JSON).
+                body(createProductUpd);
 
-        ResponseEntity<Void> responseEntity = testRestTemplate.exchange(requestEntityUpd, Void.class);
+        ResponseEntity<Void> responseEntity
+                = testRestTemplate.exchange(requestEntityUpd, Void.class);
 
         assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
-        testGet(String.valueOf(productId), nameToUpd, priceToUpd);
+        testGet(String.valueOf(productId),
+                createProductUpd.getName(),
+                createProductUpd.getPrice());
     }
 
     //обезличенный get-test
@@ -106,7 +124,6 @@ public class ProductTests extends BaseApplicationTest {
 
     //Тестовый объект для записи
     private ProductRequestDto createProductRequestDto(String name, BigDecimal price) {
-
         return ProductRequestDto.builder()
                 .name(name)
                 .price(price)
@@ -119,10 +136,11 @@ public class ProductTests extends BaseApplicationTest {
 
         //формирует Http-запрос с DTO новой сущности для получения данных об Entity
         RequestEntity<ProductRequestDto> requestEntity =
-                RequestEntity.post(URI.create(resourceUrl)).contentType(MediaType.APPLICATION_JSON).body(productRequest);
+                RequestEntity.post(URI.create(resourceUrl)).contentType(MediaType.APPLICATION_JSON).
+                        body(productRequest);
 
-        /* получаем только id из бд, чтобы не тащить все данные оттуда (в контроллере надо вернуть значение id после записи
-         в бд)*/
+        /* получаем только id из бд, чтобы не тащить все данные оттуда
+        (в контроллере надо вернуть значение id после записи в бд)*/
         Long id = testRestTemplate.postForObject(resourceUrl, requestEntity, Long.class);
 
         assertThat(id).isNotNull();
