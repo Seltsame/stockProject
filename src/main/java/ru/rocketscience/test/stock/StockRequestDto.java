@@ -1,4 +1,4 @@
-package ru.rocketscience.test.dto.request;
+package ru.rocketscience.test.stock;
 
 import lombok.Builder;
 import lombok.Value;

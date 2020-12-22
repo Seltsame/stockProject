@@ -1,10 +1,15 @@
 package ru.rocketscience.test;
 
-import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.experimental.UtilityClass;
+
 import org.testcontainers.shaded.org.apache.commons.io.IOUtils;
 
 import java.io.InputStream;
 
+
+//@ - аннотация спец Util-class
+@UtilityClass
 //специальный класс для ковертации JSON в POJO и наоборот
 public class Utils {
 
@@ -13,10 +18,10 @@ public class Utils {
         <T> - принимаем  параметр такого типа <T>
          T - возвращаем объект с этим типом.
         <?> - любые параметры */
-    public static <T> T getObjectFromResourceJson(Class<?> testClass, String jsonFileName, Class<T> objectClass) {
+
+    public static <T> T getObjectFromResourceJson(ObjectMapper objectMapper, Class<?> testClass, String jsonFileName, Class<T> objectClass) {
 
         //ObjectMapper класс-конвертер
-        ObjectMapper objectMapper = new ObjectMapper();
         //getResourceAsStream() - метод, который берёт JSON-файл и конвертирует в InputStream
         try (InputStream resourceAsStream = testClass.getResourceAsStream(jsonFileName)) {
             //readValue() - основной метод для преобразования JSON в POJO, objectClass - указанного класса, кодировки UTF-8

@@ -1,5 +1,6 @@
 package ru.rocketscience.test;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -12,8 +13,12 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+
+
 //RANDOM_PORT, чтобы использовался случайный порт, а не 8080.
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+
+@SpringBootTest(
+        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test") //выбор профиля работы приложения, прописанного в properties
 @Testcontainers
 //Базовый класс с настройками тестов
@@ -35,6 +40,9 @@ public class BaseApplicationTest {
     @Autowired
     TestRestTemplate testRestTemplate; //Http-клиент
 
+    @Autowired
+    ObjectMapper objectMapper; // Spring'овый(!)
+
     //добавление рандомного порта на тест
     @LocalServerPort
     protected int port;
@@ -44,5 +52,10 @@ public class BaseApplicationTest {
     @BeforeEach
     public void setupUrl() {
         resourceUrl = "http://localhost:" + port + "/product/";
+    }
+
+    //создаем метод, который возвращает предыдущий метод, только с вложенным objectMapper
+    protected <T> T getObjectFromResourceJson(Class<?> testClass, String jsonFileName, Class<T> objectClass) {
+        return Utils.getObjectFromResourceJson(objectMapper, testClass, jsonFileName, objectClass);
     }
 }

@@ -5,10 +5,10 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
-import ru.rocketscience.test.controller.ProductController;
-import ru.rocketscience.test.dto.ProductResponseDto;
-import ru.rocketscience.test.dto.ResponseDto;
-import ru.rocketscience.test.dto.request.ProductRequestDto;
+import ru.rocketscience.test.product.ProductController;
+import ru.rocketscience.test.product.ProductResponseDto;
+import ru.rocketscience.test.common.ResponseDto;
+import ru.rocketscience.test.product.ProductRequestDto;
 
 import java.math.BigDecimal;
 import java.net.URI;
@@ -22,12 +22,14 @@ public class ProductTests extends BaseApplicationTest {
             };
 
     //создаем и подставляем значения в RequestDto из преобразованного json: NewProduct.json
-    public static final ProductRequestDto CREATE_PRODUCT
+/*
+    public  final ProductRequestDto CREATE_PRODUCT
             = getFromJson("/product/NewProduct.json", ProductRequestDto.class);
+*/
 
     //метод для простоты вызова метода getObjectFromResourceJson();
-    private static <T> T getFromJson(String jsonFileName, Class<T> dtoClass) {
-        return Utils.getObjectFromResourceJson(ProductController.class, jsonFileName, dtoClass);
+    private  <T> T getFromJson(String jsonFileName, Class<T> dtoClass) {
+       return getObjectFromResourceJson(ProductController.class, jsonFileName, dtoClass);
     }
 
 
@@ -56,6 +58,8 @@ public class ProductTests extends BaseApplicationTest {
     //тест метода /add
     @Test
     void testAdd() {
+        ProductRequestDto CREATE_PRODUCT
+                = getFromJson("/product/NewProduct.json", ProductRequestDto.class);
 
         //подставляем значения из преобразованного json: NewProduct.json
         Long id = createProduct(CREATE_PRODUCT.getName(),
@@ -70,6 +74,8 @@ public class ProductTests extends BaseApplicationTest {
     //тест delete-метода
     @Test
     void testDelete() {
+        ProductRequestDto CREATE_PRODUCT
+                = getFromJson("/product/NewProduct.json", ProductRequestDto.class);
 
         Long productId = createProduct(
                 CREATE_PRODUCT.getName(),
@@ -84,14 +90,16 @@ public class ProductTests extends BaseApplicationTest {
     //тест update-метода
     @Test
     void testUpdate() {
+        ProductRequestDto createProduct
+                = getFromJson("/product/NewProduct.json", ProductRequestDto.class);
 
         Long productId = createProduct(
-                CREATE_PRODUCT.getName(),
-                CREATE_PRODUCT.getPrice());
+                createProduct.getName(),
+                createProduct.getPrice());
 
         testGet(String.valueOf(productId),
-                CREATE_PRODUCT.getName(),
-                CREATE_PRODUCT.getPrice());
+                createProduct.getName(),
+                createProduct.getPrice());
 
         //создаем DTO новой сущностью и подставляем значения из преобразованного json: ProductToUpdate.json
         ProductRequestDto createProductUpd

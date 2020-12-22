@@ -6,10 +6,10 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
-import ru.rocketscience.test.controller.StockController;
-import ru.rocketscience.test.dto.ResponseDto;
-import ru.rocketscience.test.dto.StockResponseDto;
-import ru.rocketscience.test.dto.request.StockRequestDto;
+import ru.rocketscience.test.stock.StockController;
+import ru.rocketscience.test.common.ResponseDto;
+import ru.rocketscience.test.stock.StockResponseDto;
+import ru.rocketscience.test.stock.StockRequestDto;
 
 import java.net.URI;
 
@@ -25,13 +25,12 @@ class StockTests extends BaseApplicationTest {
             new ParameterizedTypeReference<>() {
             };
 
-    //создаем и подставляем значения в ResponseDto из преобразованного json: NewProduct.json
-    public static final StockResponseDto CREATE_STOCK
-            = getFromJson("/stock/NewStock.json", StockResponseDto.class);
+
 
     //метод для простоты вызова метода getObjectFromResourceJson();
-    private static <T> T getFromJson(String jsonFileName, Class<T> dtoClass) {
-        return Utils.getObjectFromResourceJson(StockController.class, jsonFileName, dtoClass);
+    private <T> T getFromJson(String jsonFileName, Class<T> dtoClass) {
+    return getObjectFromResourceJson(StockController.class, jsonFileName, dtoClass);
+
     }
 
     public static String resourceUrl; //делаем переменную статиком и пишем туда результат выполнения метода setupUrl
@@ -80,26 +79,33 @@ class StockTests extends BaseApplicationTest {
     @Test
     void testAdd() {
 
+        //создаем и подставляем значения в ResponseDto из преобразованного json: NewProduct.json
+        StockResponseDto createStock
+                = getFromJson("/stock/NewStock.json", StockResponseDto.class);
+
         /* * подставляем значения из преобразованного json: NewProduct.json
          * вытаскиваем ID из созданной сущности */
         Long id = createStock(
-                CREATE_STOCK.getName(),
-                CREATE_STOCK.getCity());
+                createStock.getName(),
+                createStock.getCity());
 
         //подставляем значения из преобразованного json: NewProduct.json
         testGet(String.valueOf(id),
-                CREATE_STOCK.getName(),
-                CREATE_STOCK.getCity());
+                createStock.getName(),
+                createStock.getCity());
     }
 
     //тест delete-метода
     @Test
     void testDelete() {
+        //создаем и подставляем значения в ResponseDto из преобразованного json: NewProduct.json
+        StockResponseDto createStock
+                = getFromJson("/stock/NewStock.json", StockResponseDto.class);
 
         //Вытаскиваем ID из созданной сущности см. CREATE_STOCK
         Long stockId = createStock(
-                CREATE_STOCK.getName(),
-                CREATE_STOCK.getCity());
+                createStock.getName(),
+                createStock.getCity());
 
         //выполнение метода /del Void.class - тк метод контроллера void
         testRestTemplate.exchange(resourceUrl + stockId, HttpMethod.DELETE, null, Void.class);
@@ -111,16 +117,19 @@ class StockTests extends BaseApplicationTest {
     //тест update-метода
     @Test
     void testUpdate() {
+        //создаем и подставляем значения в ResponseDto из преобразованного json: NewProduct.json
+        StockResponseDto createStock
+                = getFromJson("/stock/NewStock.json", StockResponseDto.class);
 
         //старые данные берутся из JSON-файла, создаётся сущность и берётся её ID
         Long id = createStock(
-                CREATE_STOCK.getName(),
-                CREATE_STOCK.getCity());
+                createStock.getName(),
+                createStock.getCity());
 
         //проверка на то существование
         testGet(String.valueOf(id),
-                CREATE_STOCK.getName(),
-                CREATE_STOCK.getCity());
+                createStock.getName(),
+                createStock.getCity());
 
         //создаем DTO новой сущностью и подставляем значения из преобразованного json: StockToUpdate.json
         StockRequestDto stockRequestDto =
