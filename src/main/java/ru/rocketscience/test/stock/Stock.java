@@ -1,4 +1,4 @@
-package ru.rocketscience.test.model;
+package ru.rocketscience.test.stock;
 
 import lombok.Data;
 
@@ -9,7 +9,7 @@ import javax.persistence.Id;
 
 @Entity
 @Data
-public class Stock {
+class Stock {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

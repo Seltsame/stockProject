@@ -1,4 +1,4 @@
-package ru.rocketscience.test.model;
+package ru.rocketscience.test.product;
 
 import lombok.Data;
 
@@ -10,7 +10,7 @@ import java.math.BigDecimal;
 
 @Entity
 @Data
-public class Product {
+class Product {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -18,5 +18,5 @@ public class Product {
 
     private String name;
     private BigDecimal price; //нужно для того, чтобы были null значения, вместо 0. B
-    // igDecimal круче Double, тк не дают погрешности при вычислениях
+    //BigDecimal круче Double, тк не дают погрешности при вычислениях
 }

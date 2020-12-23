@@ -1,20 +1,15 @@
-package ru.rocketscience.test.service;
+package ru.rocketscience.test.stock;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Service;
 import ru.rocketscience.test.ValidateException;
-import ru.rocketscience.test.dto.StockResponseDto;
-import ru.rocketscience.test.dto.request.StockRequestDto;
-import ru.rocketscience.test.mapper.StockMapper;
-import ru.rocketscience.test.model.Stock;
-import ru.rocketscience.test.repository.StockRepository;
 
 import javax.transaction.Transactional;
 
 @Service
 @RequiredArgsConstructor
-public class StockService {
+class StockService {
 
     private final StockRepository stockRepository;
     private final StockMapper stockMapper;
@@ -27,21 +22,21 @@ public class StockService {
         return stockMapper.fromEntity(entityToGet.get());
         */
 
-    public StockResponseDto getById(Long id) {
+    StockResponseDto getById(Long id) {
         Stock stockById = stockRepository.findById(id).orElseThrow(()
                 -> new ValidateException("Склада с id = " + id + " не существует!"));
         return stockMapper.fromEntity(stockById);
     }
 
     //возвращаем ID после записи в репозиторий(если это нужно, если нет - void)
-    public Long add(StockRequestDto stockRequestDto) {
+    Long add(StockRequestDto stockRequestDto) {
         Stock addStock = stockRepository.save(stockMapper.toEntity(stockRequestDto));
         return addStock.getId();
     }
 
 
     @Transactional
-    public void delete(Long id) {
+    void delete(Long id) {
         try {
             stockRepository.deleteById(id);
         } catch (EmptyResultDataAccessException e) { //При отсутствии в бд id удаляемой сущности, будет выброшена следующая ошибка:
@@ -50,7 +45,7 @@ public class StockService {
     }
 
     @Transactional
-    public void update(Long id, StockRequestDto stockRequestDto) {
+    void update(Long id, StockRequestDto stockRequestDto) {
         //через orElseTrow() напрямую тащим сущность из бд, если ее нет - пробрасываем кастомную ошибку
         Stock stockToUpdate = stockRepository.findById(id).orElseThrow(()
                 -> new ValidateException("Склада с id = " + id + " не существует!"));

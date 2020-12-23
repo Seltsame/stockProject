@@ -6,9 +6,10 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
-import ru.rocketscience.test.dto.ResponseDto;
-import ru.rocketscience.test.dto.StockResponseDto;
-import ru.rocketscience.test.dto.request.StockRequestDto;
+import ru.rocketscience.test.stock.StockController;
+import ru.rocketscience.test.common.ResponseDto;
+import ru.rocketscience.test.stock.StockResponseDto;
+import ru.rocketscience.test.stock.StockRequestDto;
 
 import java.net.URI;
 
@@ -23,6 +24,14 @@ class StockTests extends BaseApplicationTest {
     public static final ParameterizedTypeReference<ResponseDto<StockResponseDto>> STOCK_RESPONSE =
             new ParameterizedTypeReference<>() {
             };
+
+
+
+    //метод для простоты вызова метода getObjectFromResourceJson();
+    private <T> T getFromJson(String jsonFileName, Class<T> dtoClass) {
+    return getObjectFromResourceJson(StockController.class, jsonFileName, dtoClass);
+
+    }
 
     public static String resourceUrl; //делаем переменную статиком и пишем туда результат выполнения метода setupUrl
 
@@ -54,7 +63,7 @@ class StockTests extends BaseApplicationTest {
     @CsvSource(delimiter = '|', value = { //value - наборы параметров, delimiter - разделитель
             "44|Склада с id = 44 не существует!",
             "четыре|ID склада должен быть указан числом! Ошибка ввода в: id, со значением value: четыре"})
-    //тест-метод /get с неправильным id
+        //тест-метод /get с неправильным id
     void testInvalidGet(String id, String expectedMessage) {
 
         // Формируем ответ сервера (выполнение метода /get при неправильном id)
@@ -70,22 +79,33 @@ class StockTests extends BaseApplicationTest {
     @Test
     void testAdd() {
 
-        String stockName = "Имя склада";
-        String cityName = "Имя города";
-        //вытаскиваем id из метода создания Stock
-        Long id = createStock(stockName, cityName);
+        //создаем и подставляем значения в ResponseDto из преобразованного json: NewProduct.json
+        StockResponseDto createStock
+                = getFromJson("/stock/NewStock.json", StockResponseDto.class);
 
-        testGet(String.valueOf(id), stockName, cityName);
+        /* * подставляем значения из преобразованного json: NewProduct.json
+         * вытаскиваем ID из созданной сущности */
+        Long id = createStock(
+                createStock.getName(),
+                createStock.getCity());
+
+        //подставляем значения из преобразованного json: NewProduct.json
+        testGet(String.valueOf(id),
+                createStock.getName(),
+                createStock.getCity());
     }
 
     //тест delete-метода
     @Test
     void testDelete() {
+        //создаем и подставляем значения в ResponseDto из преобразованного json: NewProduct.json
+        StockResponseDto createStock
+                = getFromJson("/stock/NewStock.json", StockResponseDto.class);
 
-        String nameToDel = "Новый склад";
-        String cityNameToDel = "Новый город";
-
-        Long stockId = createStock(nameToDel, cityNameToDel);
+        //Вытаскиваем ID из созданной сущности см. CREATE_STOCK
+        Long stockId = createStock(
+                createStock.getName(),
+                createStock.getCity());
 
         //выполнение метода /del Void.class - тк метод контроллера void
         testRestTemplate.exchange(resourceUrl + stockId, HttpMethod.DELETE, null, Void.class);
@@ -97,26 +117,28 @@ class StockTests extends BaseApplicationTest {
     //тест update-метода
     @Test
     void testUpdate() {
+        //создаем и подставляем значения в ResponseDto из преобразованного json: NewProduct.json
+        StockResponseDto createStock
+                = getFromJson("/stock/NewStock.json", StockResponseDto.class);
 
-        //старые данные
-        String stockName = "Имя склада";
-        String cityName = "Имя города";
-
-        Long id = createStock(stockName, cityName);
+        //старые данные берутся из JSON-файла, создаётся сущность и берётся её ID
+        Long id = createStock(
+                createStock.getName(),
+                createStock.getCity());
 
         //проверка на то существование
-        testGet(String.valueOf(id), stockName, cityName);
+        testGet(String.valueOf(id),
+                createStock.getName(),
+                createStock.getCity());
 
-        //новые данные для перезаписи
-        String stockUpdName = "Update stock";
-        String cityUpdName = "Update city";
-
-        //создаем дто с новой сущностью
-        StockRequestDto stockRequestDto = createStockRequestDto(stockUpdName, cityUpdName);
+        //создаем DTO новой сущностью и подставляем значения из преобразованного json: StockToUpdate.json
+        StockRequestDto stockRequestDto =
+                getFromJson("/stock/StockToUpdate.json", StockRequestDto.class);
 
         //формирует Http-запрос на сервер для получения данных об Entity
         RequestEntity<StockRequestDto> requestEntityUpd =  // body(stockRequestDto) - берём сущность по полученному id.
-                RequestEntity.put(URI.create(resourceUrl + id)).contentType(MediaType.APPLICATION_JSON).body(stockRequestDto);
+                RequestEntity.put(URI.create(resourceUrl + id)).contentType(MediaType.APPLICATION_JSON)
+                        .body(stockRequestDto);
 
         //выполнение метода /put и ответ от сервера
         ResponseEntity<Void> responseEntity = testRestTemplate.exchange(requestEntityUpd, Void.class);
@@ -125,7 +147,7 @@ class StockTests extends BaseApplicationTest {
         assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
 
         //выполнение теста get() чтобы проверить, берётся Entity с новыми данными
-        testGet(String.valueOf(id), stockUpdName, cityUpdName);
+        testGet(String.valueOf(id), stockRequestDto.getName(), stockRequestDto.getCity());
     }
 
     //выполняет get-запрос и проверку ожидаемого и запрашиваемого
@@ -135,6 +157,7 @@ class StockTests extends BaseApplicationTest {
          * Вместо Wrapper. Формируем ответ сервера (выполнение метода /get) */
         ResponseEntity<ResponseDto<StockResponseDto>> response =
                 testRestTemplate.exchange(resourceUrl + id, HttpMethod.GET, null, STOCK_RESPONSE);
+
         StockResponseDto data = response.getBody().getData();
 
         assertThat(data).isNotNull();
@@ -159,7 +182,6 @@ class StockTests extends BaseApplicationTest {
 
     //Тестовый объект для записи
     private StockRequestDto createStockRequestDto(String stockName, String cityName) {
-
         return StockRequestDto.builder()
                 .name(stockName)
                 .city(cityName)
