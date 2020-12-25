@@ -1,15 +1,14 @@
 package ru.rocketscience.test.stock;
 
 import lombok.Data;
+import ru.rocketscience.test.stockPlace.StockPlace;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
+import javax.persistence.*;
+import java.util.Set;
 
 @Entity
 @Data
-class Stock {
+public class Stock {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -18,5 +17,6 @@ class Stock {
     private String name;
     private String city;
 
-
+    @OneToMany(mappedBy = "stock", cascade = CascadeType.ALL)
+    Set<StockPlace> stockPlace;
 }

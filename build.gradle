@@ -44,6 +44,9 @@ dependencies {
     testImplementation 'org.testcontainers:postgresql' //подключение тестконтейнеров Docker к бд
     testImplementation 'org.testcontainers:junit-jupiter' //подключение тестконтейнеров Docker к бд
 
+    testCompileOnly 'org.projectlombok:lombok' //подключение Lombok на тесты
+    testAnnotationProcessor 'org.projectlombok:lombok' //подключение Lombok на тесты
+
 }
 
 dependencyManagement {

@@ -10,10 +10,10 @@ import springfox.documentation.swagger2.annotations.EnableSwagger2;
 
 @SpringBootApplication
 @EnableSwagger2 //подключение Swagger
-public class TestApplication {
+public class MyTestApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(TestApplication.class, args);
+		SpringApplication.run(MyTestApplication.class, args);
 			}
 
 	@Bean
