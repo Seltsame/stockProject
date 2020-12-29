@@ -8,6 +8,7 @@ import ru.rocketscience.test.stock.StockResponseDto;
 @Builder
 public class StockPlaceResponseDto {
 
+    Long id;
     String row;
     int rack;
     int capacity;

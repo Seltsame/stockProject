@@ -2,7 +2,6 @@ package ru.rocketscience.test.stockPlace;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -29,8 +28,13 @@ public class StockPlaceController {
     @PostMapping
     @ResponseBody
     Long add(@RequestBody StockPlaceRequestDto stockPlaceRequestDto) {
-
         return stockPlaceService.add(stockPlaceRequestDto);
+    }
+
+    @PostMapping(path = "/addStockPlaces")
+    @ResponseBody
+    int addStockPlaces(@RequestBody StockPlaceListRequestDto stockPlaceListRequestDto) {
+         return stockPlaceService.addStockPlaces(stockPlaceListRequestDto);
     }
 
     @DeleteMapping(path = "/{id}")

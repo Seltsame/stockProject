@@ -33,7 +33,29 @@ public class StockPlaceService {
         entity.setStock(stock);
         StockPlace addStockPlace
                 = stockPlaceRepository.save(entity);
-        return addStockPlace.getId();
+        return stockPlaceMapper.fromEntity(addStockPlace).getId();
+    }
+
+    @Transactional
+    int addStockPlaces(StockPlaceListRequestDto stockPlaceListRequestDto) {
+        int maxShelfNumber = stockPlaceRepository.getMaxShelfNumber();
+        int firstAddedShelfNum = 0;
+        StockPlace.StockPlaceBuilder builder = StockPlace.builder()
+                .row(stockPlaceListRequestDto.getRowName())
+                .capacity(stockPlaceListRequestDto.getShelfCapacity())
+                .shelf(stockPlaceListRequestDto.getShelfNumber());
+
+        for (int i = 1; i <= stockPlaceListRequestDto.getShelfNumber(); i++) {
+            StockPlace entityToSave = builder.build();
+            Stock stock
+                    = stockRepository.getById(stockPlaceListRequestDto.getStock_id()).orElseThrow(()
+                    -> new ValidateException("Места с таким id не существует!"));
+
+            entityToSave.setStock(stock);
+            entityToSave.setShelf(maxShelfNumber + i);
+            stockPlaceRepository.save(entityToSave);
+        }
+        return firstAddedShelfNum + 1;
     }
 
     @Transactional
@@ -50,7 +72,7 @@ public class StockPlaceService {
         StockPlace stockPlaceToUpdate = stockPlaceRepository.findById(id).orElseThrow(()
                 -> new ValidateException("Места с id = " + id + " не существует!"));
         stockPlaceToUpdate.setRow(stockPlaceRequestDto.getRow());
-        stockPlaceToUpdate.setRack(stockPlaceRequestDto.getRack());
+        stockPlaceToUpdate.setShelf(stockPlaceRequestDto.getShelf());
         stockPlaceToUpdate.setCapacity(stockPlaceRequestDto.getCapacity());
         stockPlaceRepository.save(stockPlaceToUpdate);
     }

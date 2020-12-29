@@ -7,7 +7,6 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import ru.rocketscience.test.common.ResponseDto;
-import ru.rocketscience.test.product.ProductController;
 import ru.rocketscience.test.product.ProductRequestDto;
 import ru.rocketscience.test.product.ProductResponseDto;
 

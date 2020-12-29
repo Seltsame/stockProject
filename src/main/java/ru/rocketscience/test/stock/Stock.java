@@ -1,13 +1,19 @@
 package ru.rocketscience.test.stock;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import ru.rocketscience.test.stockPlace.StockPlace;
 
 import javax.persistence.*;
 import java.util.Set;
 
 @Entity
+@Builder
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class Stock {
 
     @Id
@@ -19,4 +25,6 @@ public class Stock {
 
     @OneToMany(mappedBy = "stock", cascade = CascadeType.ALL)
     Set<StockPlace> stockPlace;
+
+
 }

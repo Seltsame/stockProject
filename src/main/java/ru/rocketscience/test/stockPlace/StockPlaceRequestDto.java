@@ -1,7 +1,6 @@
 package ru.rocketscience.test.stockPlace;
 
 import lombok.Builder;
-import lombok.Data;
 import lombok.Value;
 
 @Value
@@ -9,8 +8,13 @@ import lombok.Value;
 public class StockPlaceRequestDto {
 
     String row;
-    int rack;
+    int shelf;
     int capacity;
     //id склада для добавления в таблицу
+<<<<<<< HEAD
     long stockId;
+=======
+    long stock_id;
+
+>>>>>>> 07031b5 (добавлен метод addStockPlaces, который позволяет добавлять полки в неограниченном количестве + тесты)
 }
