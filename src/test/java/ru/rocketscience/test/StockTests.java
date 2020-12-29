@@ -26,14 +26,16 @@ class StockTests extends BaseApplicationTest {
             };
 
 
-
     //метод для простоты вызова метода getObjectFromResourceJson();
     private <T> T getFromJson(String jsonFileName, Class<T> dtoClass) {
-    return getObjectFromResourceJson(StockController.class, jsonFileName, dtoClass);
-
+        return getObjectFromResourceJson(StockTests.class, jsonFileName, dtoClass);
     }
 
-    public static String resourceUrl; //делаем переменную статиком и пишем туда результат выполнения метода setupUrl
+    //делаем переменную статиком и пишем туда результат выполнения метода setupUrl
+    public static String resourceUrl;
+
+    //переменную с jsonReq и Resp выносим статиком чтобы в каждом методе не создавать лишний раз
+    private static final String jsonFileNameReq = "/stock/addStock.req.json";
 
     // @BeforeEach - до каждого метода
     @BeforeEach
@@ -53,7 +55,9 @@ class StockTests extends BaseApplicationTest {
     @Test
     void testSimpleGet() {
 
-        testGet("2", "Морской склад", "Морской город");
+        String jsonFileNameResp = "/stock/addStock.resp.json";
+
+        testGet("2", getStockResponseDto(jsonFileNameResp));
     }
 
     /* 1. тестирование get-метода отрицательный сценарий, если склада не существует (введен не тот id)
@@ -66,7 +70,7 @@ class StockTests extends BaseApplicationTest {
         //тест-метод /get с неправильным id
     void testInvalidGet(String id, String expectedMessage) {
 
-        // Формируем ответ сервера (выполнение метода /get при неправильном id)
+        //формирует ответ сервера (выполнение метода /get при неправильном id)
         ResponseEntity<ResponseDto<StockResponseDto>> response =
                 testRestTemplate.exchange(resourceUrl + id, HttpMethod.GET, null, STOCK_RESPONSE);
 
@@ -79,61 +83,38 @@ class StockTests extends BaseApplicationTest {
     @Test
     void testAdd() {
 
-        //создаем и подставляем значения в ResponseDto из преобразованного json: NewProduct.json
-        StockResponseDto createStock
-                = getFromJson("/stock/NewStock.json", StockResponseDto.class);
-
-        /* * подставляем значения из преобразованного json: NewProduct.json
-         * вытаскиваем ID из созданной сущности */
-        Long id = createStock(
-                createStock.getName(),
-                createStock.getCity());
-
-        //подставляем значения из преобразованного json: NewProduct.json
-        testGet(String.valueOf(id),
-                createStock.getName(),
-                createStock.getCity());
+        /* Создаём Entity, проверяем ее(тесты на null + get-тесты) и берём ID.
+         ЗЫ см. CREATE_STOCK + createAndTestStock(); */
+        createAndTestStock(jsonFileNameReq);
     }
 
     //тест delete-метода
     @Test
     void testDelete() {
-        //создаем и подставляем значения в ResponseDto из преобразованного json: NewProduct.json
-        StockResponseDto createStock
-                = getFromJson("/stock/NewStock.json", StockResponseDto.class);
 
-        //Вытаскиваем ID из созданной сущности см. CREATE_STOCK
-        Long stockId = createStock(
-                createStock.getName(),
-                createStock.getCity());
+         /* Создаём Entity, проверяем ее(тесты на null + get-тесты) и берём ID.
+         ЗЫ см. CREATE_STOCK + createAndTestStock(); */
+        Long id = createAndTestStock(jsonFileNameReq);
 
         //выполнение метода /del Void.class - тк метод контроллера void
-        testRestTemplate.exchange(resourceUrl + stockId, HttpMethod.DELETE, null, Void.class);
+        testRestTemplate.exchange(resourceUrl + id, HttpMethod.DELETE, null, Void.class);
 
         //проверка на выполнение метода delete()
-        testInvalidGet(String.valueOf(stockId), "Склада с id = " + stockId + " не существует!");
+        testInvalidGet(String.valueOf(id), "Склада с id = " + id + " не существует!");
     }
 
     //тест update-метода
     @Test
     void testUpdate() {
-        //создаем и подставляем значения в ResponseDto из преобразованного json: NewProduct.json
-        StockResponseDto createStock
-                = getFromJson("/stock/NewStock.json", StockResponseDto.class);
 
-        //старые данные берутся из JSON-файла, создаётся сущность и берётся её ID
-        Long id = createStock(
-                createStock.getName(),
-                createStock.getCity());
+        String jsonFileNameAfterUpd = "/stock/updateStock.resp.json";
 
-        //проверка на то существование
-        testGet(String.valueOf(id),
-                createStock.getName(),
-                createStock.getCity());
+         /* Создаём Entity, проверяем ее(тесты на null + get-тесты) и берём ID.
+         ЗЫ см. CREATE_STOCK + createAndTestStock(); */
+        Long id = createAndTestStock("/stock/updateStock.req.json");
 
         //создаем DTO новой сущностью и подставляем значения из преобразованного json: StockToUpdate.json
-        StockRequestDto stockRequestDto =
-                getFromJson("/stock/StockToUpdate.json", StockRequestDto.class);
+        StockRequestDto stockRequestDto = getStockRequestDto(jsonFileNameAfterUpd);
 
         //формирует Http-запрос на сервер для получения данных об Entity
         RequestEntity<StockRequestDto> requestEntityUpd =  // body(stockRequestDto) - берём сущность по полученному id.
@@ -147,45 +128,64 @@ class StockTests extends BaseApplicationTest {
         assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
 
         //выполнение теста get() чтобы проверить, берётся Entity с новыми данными
-        testGet(String.valueOf(id), stockRequestDto.getName(), stockRequestDto.getCity());
+        testGet(String.valueOf(id), getStockResponseDto(jsonFileNameAfterUpd));
     }
 
     //выполняет get-запрос и проверку ожидаемого и запрашиваемого
-    void testGet(String id, String stockName, String cityName) {
+    void testGet(String id, StockResponseDto stockResponseDto) {
 
         /* подставляем id(взятый из новосозданной сущности) в url и сверяем с тем, что получилось
          * Вместо Wrapper. Формируем ответ сервера (выполнение метода /get) */
-        ResponseEntity<ResponseDto<StockResponseDto>> response =
+        ResponseEntity<ResponseDto<StockResponseDto>> responseEntity =
                 testRestTemplate.exchange(resourceUrl + id, HttpMethod.GET, null, STOCK_RESPONSE);
 
-        StockResponseDto data = response.getBody().getData();
+        StockResponseDto data = responseEntity.getBody().getData();
 
+        //всякме тесты на соответствие и тд
         assertThat(data).isNotNull();
-        assertThat(data.getName()).isEqualTo(stockName);
-        assertThat(data.getCity()).isEqualTo(cityName);
+        assertThat(data.getName()).isEqualTo(stockResponseDto.getName());
+        assertThat(data.getCity()).isEqualTo(stockResponseDto.getCity());
     }
 
-    //Создаём entity и получаем id entity из бд
-    private Long createStock(String stockName, String cityName) {
+    //Создаёт entity и получаем id entity из бд
+    private Long createStock(StockRequestDto stockRequestDto) {
 
-        StockRequestDto request = createStockRequestDto(stockName, cityName);
         //формирует Http-запрос с DTO новой сущности для получения данных об Entity
         RequestEntity<StockRequestDto> requestEntity =
-                RequestEntity.post(URI.create(resourceUrl)).contentType(MediaType.APPLICATION_JSON).body(request);
-        /* получаем только id из бд, чтобы не тащить все данные оттуда (в контроллере надо вернуть значение id после записи
-         в бд)*/
+                RequestEntity.post(URI.create(resourceUrl)).contentType(MediaType.APPLICATION_JSON).body(stockRequestDto);//в body пихаем dto
+
+        //получаем только id из бд, чтобы не тащить все данные оттуда (в контроллере надо вернуть значение id после записи в бд)
         Long id = testRestTemplate.postForObject(resourceUrl, requestEntity, Long.class);
 
+        //проверка на null
         assertThat(id).isNotNull();
+
         return id;
     }
 
-    //Тестовый объект для записи
-    private StockRequestDto createStockRequestDto(String stockName, String cityName) {
-        return StockRequestDto.builder()
-                .name(stockName)
-                .city(cityName)
-                .build();
+    //метод для получения id сущности при создании из JSON + тесты на null + get-тесты
+    private Long createAndTestStock(String jsonFileName) {
+
+        /* создаем и подставляем значения в RequestDto из преобразованного json: addNewProduct.req.json
+         * подставляем значения из преобразованного json: addNewProduct.req.json
+         * вытаскиваем ID из созданной сущности */
+        Long id = createStock(getStockRequestDto(jsonFileName));
+
+        //подставляем значения из преобразованного json: addNewProduct.req.json
+        // и тестируем на то, что все записалось
+        testGet(String.valueOf(id), getStockResponseDto(jsonFileName));
+
+        return id;
+    }
+
+    //создание RequestDto из вх. json'а
+    private StockRequestDto getStockRequestDto(String jsonFileNameReq) {
+        return getFromJson(jsonFileNameReq, StockRequestDto.class);
+    }
+
+    //создание ResponseDto из вх. json'а
+    private StockResponseDto getStockResponseDto(String jsonFileNameResp) {
+        return getFromJson(jsonFileNameResp, StockResponseDto.class);
     }
 }
 /* Wrapper используем, как альтернативный способ получить вложенный ответ из response;

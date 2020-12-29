@@ -1,5 +1,6 @@
 package ru.rocketscience.test.product;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -10,13 +11,10 @@ import ru.rocketscience.test.common.ResponseDto;
 @RestController
 @RequestMapping(path = "product")
 @Slf4j //включаем логировнаие
+@RequiredArgsConstructor
 public class ProductController {
 
     private final ProductService productService;
-
-    ProductController(ProductService productService) {
-        this.productService = productService;
-    }
 
     @GetMapping(path = "{id}")
     @ResponseBody
@@ -30,6 +28,7 @@ public class ProductController {
 
     @PostMapping
     Long add(@RequestBody ProductRequestDto productRequestDto) {
+
         return productService.add(productRequestDto);
     }
 
@@ -61,7 +60,8 @@ public class ProductController {
         String errMessage = ex.getMessage();
         log.error("handlerArgumentTypeMismatchException: finished with exception: + {}", errMessage);
         return new ResponseDto<>("ID товара должен быть указан числом! "
-                + "Ошибка ввода в: " + ex.getParameter().getParameterName() + ", со значением value: " + ex.getValue(), null);
+                + "Ошибка ввода в: " + ex.getParameter().getParameterName()
+                + ", со значением value: " + ex.getValue(), null);
     }
 }
 
