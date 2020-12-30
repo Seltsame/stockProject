@@ -1,0 +1,22 @@
+{
+  "stockPlaceList": [
+    {
+      "rowName": "Второй",
+      "shelfNumber": 1,
+      "capacity": 19,
+      "shelfCapacity": {
+        "name": "Спб склад",
+        "city": "Спб"
+      }
+    },
+    {
+      "rowName": "Первый",
+      "shelfNumber": 3,
+      "shelfCapacity": 9,
+      "stock": {
+        "name": "Спб склад",
+        "city": "Спб"
+      }
+    }
+  ]
+}

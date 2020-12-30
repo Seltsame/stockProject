@@ -10,8 +10,8 @@ public class StockPlaceResponseDto {
 
     Long id;
     String row;
-    int rack;
+    int shelf;
     int capacity;
     //тут лежит дто склада чтобы можно было взять её поля
     StockResponseDto stock;
-}
+    }

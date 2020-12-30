@@ -1,16 +1,14 @@
-package ru.rocketscience.test.stockPlace;
+package ru.rocketscience.test.distributor;
 
 import lombok.Builder;
 import lombok.Value;
 
 @Value
 @Builder
-public class StockPlaceListRequestDto {
+public class DistributorPlCapResponseDto {
 
-    long stockId;
+    long stockPlaceId;
     String rowName; //название ряда, если не существует, надо создать
     int shelfNumber; //число полок
-    int shelfCapacity; //вместимость полки
-
-
+    int shelfCapacity;
 }

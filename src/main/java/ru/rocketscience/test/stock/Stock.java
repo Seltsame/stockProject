@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 import ru.rocketscience.test.stockPlace.StockPlace;
 
 import javax.persistence.*;
-import java.util.Set;
+import java.util.List;
 
 @Entity
 @Builder
@@ -24,7 +24,7 @@ public class Stock {
     private String city;
 
     @OneToMany(mappedBy = "stock", cascade = CascadeType.ALL)
-    Set<StockPlace> stockPlace;
+    List<StockPlace> stockPlace;
 
 
 }

@@ -38,23 +38,28 @@ public class StockPlaceService {
 
     @Transactional
     int addStockPlaces(StockPlaceListRequestDto stockPlaceListRequestDto) {
+        //из бд берем максимальный порядковый номер полочки
         int maxShelfNumber = stockPlaceRepository.getMaxShelfNumber();
         int firstAddedShelfNum = 0;
+        //создаём объект StockPlace и присваиваем данные из DTO
         StockPlace.StockPlaceBuilder builder = StockPlace.builder()
                 .row(stockPlaceListRequestDto.getRowName())
                 .capacity(stockPlaceListRequestDto.getShelfCapacity())
                 .shelf(stockPlaceListRequestDto.getShelfNumber());
 
+        //создаём Entity, записываем ее в бд. (в цикле делается для того, чтобы записать пачку идекнтичных полочек)
         for (int i = 1; i <= stockPlaceListRequestDto.getShelfNumber(); i++) {
             StockPlace entityToSave = builder.build();
             Stock stock
-                    = stockRepository.getById(stockPlaceListRequestDto.getStock_id()).orElseThrow(()
+                    = stockRepository.getById(stockPlaceListRequestDto.getStockId()).orElseThrow(()
                     -> new ValidateException("Места с таким id не существует!"));
-
+            //присваиваем id необходимого склада
             entityToSave.setStock(stock);
+            //присваиваем порядковый номер полочки + 1, чтобы в бд полочки шли по порядку
             entityToSave.setShelf(maxShelfNumber + i);
             stockPlaceRepository.save(entityToSave);
         }
+        //по тз надо вернуть номер первой добавленной полочки
         return firstAddedShelfNum + 1;
     }
 
@@ -76,4 +81,6 @@ public class StockPlaceService {
         stockPlaceToUpdate.setCapacity(stockPlaceRequestDto.getCapacity());
         stockPlaceRepository.save(stockPlaceToUpdate);
     }
+
+
 }

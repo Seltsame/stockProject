@@ -93,6 +93,39 @@ public class StockPlaceTests extends BaseApplicationTest {
         testGet(String.valueOf(id), stockPlaceResponseDtoUpd);
     }
 
+
+    @Test
+    void addStockPlaces() {
+
+        String resourceUrlAddStockPlaces = resourceUrl + "/addStockPlaces/";
+
+        StockPlaceListRequestDto stockPlaceListRequestDto
+                = getFromJson("/stockPlace/addManyStockPlaces.req.json", StockPlaceListRequestDto.class);
+
+        RequestEntity<StockPlaceListRequestDto> requestEntity
+                = RequestEntity.post(URI.create(resourceUrlAddStockPlaces)).contentType(MediaType.APPLICATION_JSON)
+                .body(stockPlaceListRequestDto);
+
+        Long id = testRestTemplate.postForObject(resourceUrlAddStockPlaces, requestEntity, Long.class);
+
+        assertThat(id).isNotNull();
+
+        StockPlaceListResponseDto stockPlaceListResponseDto
+                = getFromJson("/stockPlace/addManyStockPlaces.resp.json", StockPlaceListResponseDto.class);
+
+        ParameterizedTypeReference<ResponseDto<StockPlaceListResponseDto>> stockPlaceListResponse
+                = new ParameterizedTypeReference<>() {
+        };
+
+        ResponseEntity<ResponseDto<StockPlaceListResponseDto>> responseEntity
+                = testRestTemplate.exchange(resourceUrl + id, HttpMethod.GET, null, stockPlaceListResponse);
+
+        StockPlaceListResponseDto data = responseEntity.getBody().getData();
+
+        assertThat(data).isNotNull();
+        assertThat(data.getFirstAddedStockPlaceNum()).isEqualTo(stockPlaceListResponseDto.getFirstAddedStockPlaceNum());
+    }
+
     void testGet(String id, StockPlaceResponseDto stockPlaceResponseDto) {
 
         ResponseEntity<ResponseDto<StockPlaceResponseDto>> responseEntity
@@ -101,7 +134,7 @@ public class StockPlaceTests extends BaseApplicationTest {
 
         assertThat(data).isNotNull();
         assertThat(data.getRow()).isEqualTo(stockPlaceResponseDto.getRow());
-        assertThat(data.getRack()).isEqualTo(stockPlaceResponseDto.getRack());
+        assertThat(data.getShelf()).isEqualTo(stockPlaceResponseDto.getShelf());
         assertThat(data.getCapacity()).isEqualTo(stockPlaceResponseDto.getCapacity());
     }
 
@@ -139,37 +172,6 @@ public class StockPlaceTests extends BaseApplicationTest {
         return getFromJson(jsonFileNameResp, StockPlaceResponseDto.class);
     }
 
-    @Test
-    void addStockPlaces() {
-
-        String resourceUrlAddStockPlaces = resourceUrl + "/addStockPlaces/";
-
-        StockPlaceListRequestDto stockPlaceListRequestDto
-                = getFromJson("/stockPlace/addManyStockPlaces.req.json", StockPlaceListRequestDto.class);
-
-        RequestEntity<StockPlaceListRequestDto> requestEntity
-                = RequestEntity.post(URI.create(resourceUrlAddStockPlaces)).contentType(MediaType.APPLICATION_JSON)
-                .body(stockPlaceListRequestDto);
-
-        Long id = testRestTemplate.postForObject(resourceUrlAddStockPlaces, requestEntity, Long.class);
-
-        assertThat(id).isNotNull();
-
-        StockPlaceListResponseDto stockPlaceListResponseDto
-                = getFromJson("/stockPlace/addManyStockPlaces.resp.json", StockPlaceListResponseDto.class);
-
-        ParameterizedTypeReference<ResponseDto<StockPlaceListResponseDto>> stockPlaceListResponse
-                = new ParameterizedTypeReference<>() {
-        };
-
-        ResponseEntity<ResponseDto<StockPlaceListResponseDto>> responseEntity
-                = testRestTemplate.exchange(resourceUrl + id, HttpMethod.GET, null, stockPlaceListResponse);
-
-        StockPlaceListResponseDto data = responseEntity.getBody().getData();
-
-        assertThat(data).isNotNull();
-        assertThat(data.getFirstAddedStockPlaceNum()).isEqualTo(stockPlaceListResponseDto.getFirstAddedStockPlaceNum());
-    }
 }
 /* public static class StockDtoWrapper {
         public StockResponseDto data;
