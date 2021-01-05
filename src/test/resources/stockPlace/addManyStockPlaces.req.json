@@ -1,6 +1,7 @@
 {
-  "stock_id": 2,
+
   "rowName": "Первый",
   "shelfNumber": 2,
-  "shelfCapacity": 10
+  "shelfCapacity": 10,
+  "stockId": 2
 }

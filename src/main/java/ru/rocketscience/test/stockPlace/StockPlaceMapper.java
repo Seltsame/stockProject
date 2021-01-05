@@ -10,7 +10,7 @@ public interface StockPlaceMapper {
 
     StockPlace toEntity(StockPlaceRequestDto stockPlaceRequestDto);
 
-    StockPlaceListResponseDto fromEntityPlaceId(StockPlace stockPlace);
+   /* StockPlaceListResponseDto fromEntityPlaceId(StockPlace stockPlace);
 
-    StockPlace toEntityPlaceData(StockPlaceListRequestDto stockPlaceListRequestDto);
+    StockPlace toEntityPlaceData(StockPlaceListRequestDto stockPlaceListRequestDto);*/
 }

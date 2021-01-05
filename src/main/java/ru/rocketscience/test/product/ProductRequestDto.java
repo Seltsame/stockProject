@@ -12,4 +12,6 @@ public class ProductRequestDto {
 
     String name;
     BigDecimal price;
+    int stockPlaceId;
+
 }

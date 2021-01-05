@@ -1,4 +1,9 @@
 {
   "name": "Новое имя товара",
-  "price": 100500
+  "price": 100500,
+  "stockPlace": {
+    "row": "Второй",
+    "stock_id": 1,
+    "shelf": 16
+  }
 }

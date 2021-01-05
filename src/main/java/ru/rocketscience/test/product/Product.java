@@ -24,8 +24,15 @@ public class Product {
     private String name;
     private BigDecimal price; //нужно для того, чтобы были null значения, вместо 0. B
     //BigDecimal круче Double, тк не дают погрешности при вычислениях
+    private int quantityProduct;
 
-    @ManyToMany(mappedBy = "productList")
+    /*@ManyToMany(mappedBy = "productList")
     //@JoinColumn(name = "stock_place_id", foreignKey = @ForeignKey(name = "product_to_stock_place"))
-    List<StockPlace> stockPlaceList;
+    List<StockPlace> stockPlaceList;*/
+
+    @ManyToOne
+    @JoinColumn(name = "stock_place_id", foreignKey = @ForeignKey(name = "stock_place_to_product"))
+    StockPlace stockPlace;
+
 }
+

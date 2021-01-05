@@ -1,4 +1,5 @@
 {
   "name": "Старое имя товара",
-  "price": 100
+  "price": 100,
+  "stockPlaceId": 1
 }

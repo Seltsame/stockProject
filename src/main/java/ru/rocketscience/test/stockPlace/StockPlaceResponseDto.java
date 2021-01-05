@@ -5,7 +5,6 @@ import lombok.Value;
 import ru.rocketscience.test.stock.StockResponseDto;
 
 @Value
-@Builder
 public class StockPlaceResponseDto {
 
     Long id;
@@ -13,5 +12,5 @@ public class StockPlaceResponseDto {
     int shelf;
     int capacity;
     //тут лежит дто склада чтобы можно было взять её поля
-    StockResponseDto stock;
+   public StockResponseDto stock;
     }

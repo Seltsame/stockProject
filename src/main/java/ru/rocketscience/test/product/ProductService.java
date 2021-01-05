@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Service;
 import ru.rocketscience.test.ValidateException;
+import ru.rocketscience.test.stockPlace.StockPlace;
+import ru.rocketscience.test.stockPlace.StockPlaceRepository;
 
 import javax.transaction.Transactional;
 
@@ -13,6 +15,7 @@ class ProductService {
 
     private final ProductRepository productRepository;
     private final ProductMapper productMapper;
+    private final StockPlaceRepository stockPlaceRepository;
 
     ProductResponseDto getById(Long id) {
         Product productToGet = productRepository.findById(id).orElseThrow(()
@@ -20,10 +23,23 @@ class ProductService {
         return productMapper.fromEntity(productToGet);
     }
 
-    Long add(ProductRequestDto productRequestDto) {
+    /*Long add(ProductRequestDto productRequestDto) {
         Product productToSave = productRepository.save(productMapper.toEntity(productRequestDto));
         return productMapper.fromEntity(productToSave).getId();
+    }*/
+    @Transactional
+    Long add(ProductRequestDto productRequestDto) {
+        Product entity = productMapper.toEntity(productRequestDto);
+        int lastQuantityProduct = productRepository.getMaxQuantityProduct(); //берем количество товара
+        StockPlace stockPlace
+                = stockPlaceRepository.getById((long)productRequestDto.getStockPlaceId()).orElseThrow(()
+                -> new ValidateException("Такого товара не существует!"));
+        entity.setStockPlace(stockPlace);
+        entity.setQuantityProduct(lastQuantityProduct + 1); //в данном случае товар увеличивается на 1, тк добавление одного товара!!!
+        Product addProduct = productRepository.save(entity);
+        return productMapper.fromEntity(addProduct).getId();
     }
+
 
     @Transactional
     void delete(Long id) {

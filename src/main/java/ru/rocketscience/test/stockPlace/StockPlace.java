@@ -25,18 +25,20 @@ public class StockPlace {
     private int shelf;
     private int capacity;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "stock_id", foreignKey = @ForeignKey(name = "stock_place_to_stock"))
     Stock stock;
 
-    @ManyToMany(fetch = FetchType.LAZY)
+    /*@ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(name = "product_stock_place",
             joinColumns = @JoinColumn(name = "stock_place_id"),
             inverseJoinColumns = @JoinColumn(name = "product_id"))
-    List<Product> productList;
+    List<Product> productList;*/
 
 /*    @ManyToMany(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id", foreignKey = @ForeignKey(name = "stock_place_to_product"))
     List<Product> productList;*/
 
+    @OneToMany(mappedBy = "stockPlace")
+    List<Product> productList;
 }
