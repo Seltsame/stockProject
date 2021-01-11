@@ -3,10 +3,10 @@ CREATE TABLE IF NOT EXISTS stock_place
 (
 
     id       BIGSERIAL PRIMARY KEY,
-
     row      varchar(30) NOT NULL,
     shelf    int         NOT NULL,
     capacity int         NOT NULL,
-    stock_id bigint      NOT NULL
+    stock_id bigint      NOT NULL,
 
+    CONSTRAINT stock_place_to_stock FOREIGN KEY (stock_id) REFERENCES stock_place
 );

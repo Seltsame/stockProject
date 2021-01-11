@@ -13,6 +13,12 @@ configurations {
         extendsFrom annotationProcessor
     }
 }
+compileJava {
+    options.compilerArgs += "-Amapstruct.defaultComponentModel=spring"
+    //Чтобы не писать @Mapper((componentModel = "spring"))
+    options.compilerArgs += "-Amapstruct.unmappedTargetPolicy=IGNORE" //Чтобы не писать каждый раз в Mapper
+    // unmappedTargetPolicy = ReportingPolicy.IGNORE
+}
 
 repositories {
     mavenCentral()
@@ -20,23 +26,22 @@ repositories {
 
 ext {
     set('testcontainersVersion', "1.15.0")
+  //  set('mapstructVersion', '1.4.1.Final')
 }
 
 dependencies {
+    compileOnly 'org.projectlombok:lombok'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.flywaydb:flyway-core' //подключение flyWay
     implementation 'org.mapstruct:mapstruct:1.4.1.Final' //подключение mapStruct
-    implementation 'org.projectlombok:lombok:1.18.16'
-    implementation 'org.projectlombok:lombok:1.18.16'
+    implementation 'org.projectlombok:lombok:1.18.16' //подключение Lombok
     implementation 'io.springfox:springfox-swagger2:2.7.0' //подключение Swagger
     implementation 'io.springfox:springfox-swagger-ui:2.7.0' //подключение Swagger
-    compileOnly 'org.projectlombok:lombok'
     compile 'commons-io:commons-io:2.8.0' //вызов IOUtils.toString в Util классе
     runtimeOnly 'org.postgresql:postgresql'
-    annotationProcessor 'org.projectlombok:lombok'
     annotationProcessor 'org.mapstruct:mapstruct-processor:1.4.1.Final' //подключение mapStruct
-    //compilerArg -Amapstruct.unmappedTargetPolicy=IGNORE'
+    annotationProcessor 'org.projectlombok:lombok'
     testImplementation('org.springframework.boot:spring-boot-starter-test') {
         exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
     }
@@ -47,8 +52,6 @@ dependencies {
 
     testCompileOnly 'org.projectlombok:lombok' //подключение Lombok на тесты
     testAnnotationProcessor 'org.projectlombok:lombok' //подключение Lombok на тесты
-
-
 
 }
 
