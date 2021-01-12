@@ -7,8 +7,6 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import ru.rosketscience.test.common.ResponseDto;
-import ru.rosketscience.test.stockPlace.StockPlaceBunchRequestDto;
-import ru.rosketscience.test.stockPlace.StockPlaceBunchResponseDto;
 import ru.rosketscience.test.stockPlace.StockPlaceRequestDto;
 import ru.rosketscience.test.stockPlace.StockPlaceResponseDto;
 
@@ -17,6 +15,13 @@ import java.net.URI;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class StockPlaceTests extends BaseApplicationTest {
+
+    /* public static class StockDtoWrapper {
+        public StockResponseDto data;
+    }
+    //использование Wrapper
+    StockDtoWrapper wrapper = testRestTemplate.getForObject(resourceUrlId, StockDtoWrapper.class);
+    StockResponseDto data = wrapper.data; */
 
 
     public final ParameterizedTypeReference<ResponseDto<StockPlaceResponseDto>> STOCKPLACE_RESPONSE
@@ -40,7 +45,6 @@ public class StockPlaceTests extends BaseApplicationTest {
             "407|Места с id = 407 не существует!",
             "сорок|Id места должен быть указан числом! Ошибка ввода в: id, со значением value: сорок"})
     void testInvalidGet(String id, String expectedMessage) {
-
         ResponseEntity<ResponseDto<StockPlaceResponseDto>> responseEntity
                 = testRestTemplate.exchange(resourceUrl + id, HttpMethod.GET, null,
                 STOCKPLACE_RESPONSE);
@@ -51,29 +55,23 @@ public class StockPlaceTests extends BaseApplicationTest {
 
     @Test
     void simpleGet() {
-
         testGet("1", getStockPlaceResponseDto("/stockPlace/addStockPlace.resp.json"));
     }
 
     @Test
     void testAdd() {
-
         createAndTestStockPlace(jsonFileNameReq);
     }
 
     @Test
     void testDelete() {
-
         Long id = createStockPlace(getStockPlaceRequestDto(jsonFileNameReq));
-
         testRestTemplate.exchange(resourceUrl + id, HttpMethod.DELETE, null, Void.class);
-
         testInvalidGet(String.valueOf(id), "Места с id = " + id + " не существует!");
     }
 
     @Test
     void testUpdate() {
-
         String jsonFileNameBeforeUpd = "/stockPlace/updateStockPlace.req.json";
         String jsonFileNameAfterUpd = "/stockPlace/updateStockPlace.resp.json";
 
@@ -87,47 +85,36 @@ public class StockPlaceTests extends BaseApplicationTest {
                 .body(getStockPlaceRequestDto(jsonFileNameAfterUpd));
 
         ResponseEntity<Void> responseEntityUpd = testRestTemplate.exchange(requestEntityUpd, Void.class);
-
         assertThat(responseEntityUpd.getStatusCode()).isEqualTo(HttpStatus.OK);
-
         testGet(String.valueOf(id), stockPlaceResponseDtoUpd);
     }
 
 
     @Test
-    void addStockPlaces() {
-
+    void testAddManyStockPlaces() {
         String resourceUrlAddStockPlaces = resourceUrl + "/addStockPlaces/";
+        StockPlaceRequestDto stockPlaceRequestDto
+                = getStockPlaceRequestDto("/stockPlace/addManyStockPlaces.req.json");
+        StockPlaceResponseDto stockPlaceResponseDto
+                = getStockPlaceResponseDto("/stockPlace/addManyStockPlaces.resp.json");
 
-        StockPlaceBunchRequestDto stockPlaceBunchRequestDto
-                = getFromJson("/stockPlace/addManyStockPlaces.req.json", StockPlaceBunchRequestDto.class);
-
-        RequestEntity<StockPlaceBunchRequestDto> requestEntity
+        RequestEntity<StockPlaceRequestDto> requestEntity
                 = RequestEntity.post(URI.create(resourceUrlAddStockPlaces)).contentType(MediaType.APPLICATION_JSON)
-                .body(stockPlaceBunchRequestDto);
+                .body(stockPlaceRequestDto);
 
         Long id = testRestTemplate.postForObject(resourceUrlAddStockPlaces, requestEntity, Long.class);
-
         assertThat(id).isNotNull();
 
-        StockPlaceBunchResponseDto stockPlaceBunchResponseDto
-                = getFromJson("/stockPlace/addManyStockPlaces.resp.json", StockPlaceBunchResponseDto.class);
+        ResponseEntity<ResponseDto<StockPlaceResponseDto>> responseEntity
+                = testRestTemplate.exchange(resourceUrl + id, HttpMethod.GET, null, STOCKPLACE_RESPONSE);
 
-        ParameterizedTypeReference<ResponseDto<StockPlaceBunchResponseDto>> stockPlaceListResponse
-                = new ParameterizedTypeReference<>() {
-        };
-
-        ResponseEntity<ResponseDto<StockPlaceBunchResponseDto>> responseEntity
-                = testRestTemplate.exchange(resourceUrl + id, HttpMethod.GET, null, stockPlaceListResponse);
-
-        StockPlaceBunchResponseDto data = responseEntity.getBody().getData();
-
+        StockPlaceResponseDto data = responseEntity.getBody().getData();
+        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(data).isNotNull();
-        assertThat(data.getFirstAddedStockPlaceNum()).isEqualTo(stockPlaceBunchResponseDto.getFirstAddedStockPlaceNum());
+        assertThat(data.getFirstAddedStockPlaceNum()).isEqualTo(stockPlaceResponseDto.getFirstAddedStockPlaceNum());
     }
 
     void testGet(String id, StockPlaceResponseDto stockPlaceResponseDto) {
-
         ResponseEntity<ResponseDto<StockPlaceResponseDto>> responseEntity
                 = testRestTemplate.exchange(resourceUrl + id, HttpMethod.GET, null, STOCKPLACE_RESPONSE);
         StockPlaceResponseDto data = responseEntity.getBody().getData();
@@ -140,27 +127,21 @@ public class StockPlaceTests extends BaseApplicationTest {
 
     //создаём сущность сразу requestDto созданную из JSONки
     private Long createStockPlace(StockPlaceRequestDto stockPlaceRequestDto) {
-
         RequestEntity<StockPlaceRequestDto> requestEntity
                 = RequestEntity.post(URI.create(resourceUrl)).contentType(MediaType.APPLICATION_JSON)
                 .body(stockPlaceRequestDto);
 
         Long id = testRestTemplate.postForObject(resourceUrl, requestEntity, Long.class);
-
         assertThat(id).isNotNull();
-
         return id;
     }
 
     //метод для создание, тестирования Entity и возврат его ID
     private Long createAndTestStockPlace(String jsonFileName) {
-
         //создаём entity напрямую из json объекта
         Long id = createStockPlace(getStockPlaceRequestDto(jsonFileName));
-
         //проверяем тестом responseDto. Делается для того, чтобы было понятно, что по stock_id лежит
         testGet(String.valueOf(id), getStockPlaceResponseDto(jsonFileName));
-
         return id;
     }
 
@@ -171,11 +152,4 @@ public class StockPlaceTests extends BaseApplicationTest {
     private StockPlaceResponseDto getStockPlaceResponseDto(String jsonFileNameResp) {
         return getFromJson(jsonFileNameResp, StockPlaceResponseDto.class);
     }
-
 }
-/* public static class StockDtoWrapper {
-        public StockResponseDto data;
-    }
-    //использование Wrapper
-    StockDtoWrapper wrapper = testRestTemplate.getForObject(resourceUrlId, StockDtoWrapper.class);
-    StockResponseDto data = wrapper.data; */

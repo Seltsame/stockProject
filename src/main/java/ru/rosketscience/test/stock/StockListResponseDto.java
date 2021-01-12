@@ -5,14 +5,13 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
 
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class StockRequestDto {
+public class StockListResponseDto {
 
-    long stockId;
-    String name;
-    String city;
+    List<String> stockList;
 }

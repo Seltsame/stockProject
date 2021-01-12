@@ -8,21 +8,36 @@ import javax.persistence.*;
 import java.util.Set;
 
 @Entity
-@Data
 @Builder
-@AllArgsConstructor(access = AccessLevel.PUBLIC)
+@Data
+@AllArgsConstructor
 @NoArgsConstructor
+//@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class StockPlace {
+
+    /*
+     * При OneToMany, ManyToOne, ManyToMany, OneToOne , при использовании Lombok:
+     * Когда Entity ссылается на Entity (OneToMany, ManyToOne, ManyToMany, OneToOne), то надо исключить из нее переопределение toString и equalsAndHashCode
+     * желательно всех полей, кроме ID
+     * вложенные сущности, для того, чтобы избежать рекурсивного вызова методов: т.к. при переопределении они по цепочке лезут друг
+     * за другом и в конечном итоге доходят до List/Set.. и котором Hibernate-proxy, который начинает разворачивать List/Set,
+     * которые ссылаются на начальные методы и это приводит к рекурсии.
+     * Обычно достаточно ID для переопределения
+     *
+     * Если связь однонаправленная, то не надо
+     * */
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @ToString.Exclude //помеченное поле для переопределение методов
+    @EqualsAndHashCode.Include  //помеченное поле для переопределение методов
     private Long id;
 
     private String row;
     private int shelf;
     private int capacity;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "stock_id", foreignKey = @ForeignKey(name = "stock_place_to_stock"))
     Stock stock;
 

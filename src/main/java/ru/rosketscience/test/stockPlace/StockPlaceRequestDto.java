@@ -1,6 +1,9 @@
 package ru.rosketscience.test.stockPlace;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @AllArgsConstructor
@@ -8,9 +11,11 @@ import lombok.*;
 @Builder
 public class StockPlaceRequestDto {
 
+    long id;
     String row;
     int shelf;
     int capacity;
+
     //id склада для добавления в таблицу
     long stockId;
 

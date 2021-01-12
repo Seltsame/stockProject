@@ -7,8 +7,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import ru.rosketscience.test.common.ResponseDto;
-import ru.rosketscience.test.stock.StockResponseDto;
-import ru.rosketscience.test.stock.StockRequestDto;
+import ru.rosketscience.test.stock.*;
 
 import java.net.URI;
 
@@ -24,6 +23,18 @@ class StockTests extends BaseApplicationTest {
             new ParameterizedTypeReference<>() {
             };
 
+    /* Wrapper используем, как альтернативный способ получить вложенный ответ из response;
+     *  Альтернативный от ParameterizedTypeReference<<>>
+     *  Урезанная копия ResponseDto
+     *  Плохо тем, что (частино) копирует ResponseDto */
+
+   /* public static class StockDtoWrapper {
+        public StockResponseDto data;
+    }
+
+    //использование Wrapper
+    StockDtoWrapper wrapper = testRestTemplate.getForObject(resourceUrlId, StockDtoWrapper.class);
+    StockResponseDto data = wrapper.data; */
 
     //метод для простоты вызова метода getObjectFromResourceJson();
     private <T> T getFromJson(String jsonFileName, Class<T> dtoClass) {
@@ -53,9 +64,7 @@ class StockTests extends BaseApplicationTest {
     //тестирование get-метода положительный сценарий
     @Test
     void testSimpleGet() {
-
         String jsonFileNameResp = "/stock/addStock.resp.json";
-
         testGet("2", getStockResponseDto(jsonFileNameResp));
     }
 
@@ -68,11 +77,9 @@ class StockTests extends BaseApplicationTest {
             "четыре|ID склада должен быть указан числом! Ошибка ввода в: id, со значением value: четыре"})
         //тест-метод /get с неправильным id
     void testInvalidGet(String id, String expectedMessage) {
-
         //формирует ответ сервера (выполнение метода /get при неправильном id)
         ResponseEntity<ResponseDto<StockResponseDto>> response =
                 testRestTemplate.exchange(resourceUrl + id, HttpMethod.GET, null, STOCK_RESPONSE);
-
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(response.getBody().getError()).isEqualTo(expectedMessage);
     }
@@ -81,7 +88,6 @@ class StockTests extends BaseApplicationTest {
      При добавлении проще и правильнее проверять по id добавленного объекта */
     @Test
     void testAdd() {
-
         /* Создаём Entity, проверяем ее(тесты на null + get-тесты) и берём ID.
          ЗЫ см. CREATE_STOCK + createAndTestStock(); */
         createAndTestStock(jsonFileNameReq);
@@ -90,14 +96,11 @@ class StockTests extends BaseApplicationTest {
     //тест delete-метода
     @Test
     void testDelete() {
-
          /* Создаём Entity, проверяем ее(тесты на null + get-тесты) и берём ID.
          ЗЫ см. CREATE_STOCK + createAndTestStock(); */
         Long id = createAndTestStock(jsonFileNameReq);
-
         //выполнение метода /del Void.class - тк метод контроллера void
         testRestTemplate.exchange(resourceUrl + id, HttpMethod.DELETE, null, Void.class);
-
         //проверка на выполнение метода delete()
         testInvalidGet(String.valueOf(id), "Склада с id = " + id + " не существует!");
     }
@@ -107,14 +110,11 @@ class StockTests extends BaseApplicationTest {
     void testUpdate() {
 
         String jsonFileNameAfterUpd = "/stock/updateStock.resp.json";
-
          /* Создаём Entity, проверяем ее(тесты на null + get-тесты) и берём ID.
          ЗЫ см. CREATE_STOCK + createAndTestStock(); */
         Long id = createAndTestStock("/stock/updateStock.req.json");
-
         //создаем DTO новой сущностью и подставляем значения из преобразованного json: StockToUpdate.json
         StockRequestDto stockRequestDto = getStockRequestDto(jsonFileNameAfterUpd);
-
         //формирует Http-запрос на сервер для получения данных об Entity
         RequestEntity<StockRequestDto> requestEntityUpd =  // body(stockRequestDto) - берём сущность по полученному id.
                 RequestEntity.put(URI.create(resourceUrl + id)).contentType(MediaType.APPLICATION_JSON)
@@ -122,25 +122,99 @@ class StockTests extends BaseApplicationTest {
 
         //выполнение метода /put и ответ от сервера
         ResponseEntity<Void> responseEntity = testRestTemplate.exchange(requestEntityUpd, Void.class);
-
         //проверка ответа сервера
         assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
-
         //выполнение теста get() чтобы проверить, берётся Entity с новыми данными
         testGet(String.valueOf(id), getStockResponseDto(jsonFileNameAfterUpd));
     }
 
+    //список всех складов по имени города
+    @Test
+    void testGetAllStocksByCityName() {
+        String jsonFileNameResp = "/stock/getStocksByCityName.resp.json";
+
+        ParameterizedTypeReference<ResponseDto<StockListResponseDto>> parameterizedTypeReferenceResponse =
+                new ParameterizedTypeReference<>() {
+                };
+        //StockResponseDto stockResponseDto = getStockResponseDto(jsonFileNameResp);
+        StockListResponseDto stockResponseDto
+                = getFromJson(jsonFileNameResp, StockListResponseDto.class);
+        ResponseEntity<ResponseDto<StockListResponseDto>> responseEntity
+                = testRestTemplate.exchange(
+                resourceUrl + "stockListByCityName/" + getStockRequestDto("/stock/getStocksByCityName.req.json").getCity(),
+                HttpMethod.GET, null, parameterizedTypeReferenceResponse);
+
+        StockListResponseDto data = responseEntity.getBody().getData();
+        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(data).isNotNull();
+        assertThat(data.getStockList()).isEqualTo(stockResponseDto.getStockList());
+    }
+
+    //Общее количество свободных мест на складе
+    @Test
+    void testGetMaxCapacityInStock() {
+
+        StockRequestDto stockRequestDto = getStockRequestDto("/stock/getMaxCapacityInStock.req.json");
+        StockFreeSpaceResponseDto stockResponseDto
+                = getFromJson("/stock/getMaxCapacityInStock.resp.json", StockFreeSpaceResponseDto.class);
+        ParameterizedTypeReference<ResponseDto<Long>> parameterizedTypeReferenceResponse =
+                new ParameterizedTypeReference<>() {
+                };
+
+        ResponseEntity<ResponseDto<Long>> responseEntity
+                = testRestTemplate.exchange(resourceUrl + "maxCapacityInStock/" + stockRequestDto.getStockId(),
+                HttpMethod.GET, null, parameterizedTypeReferenceResponse);
+        Long data = responseEntity.getBody().getData();
+        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(data).isNotNull();
+        assertThat(data).isEqualTo(stockResponseDto.getStockFreeSpace());
+    }
+
+    //поиск мест по ид склада вывод в map х : у
+    @Test
+    void testGetStockPlacesFreeSpaceByStockId() {
+        StockRequestDto stockRequestDto
+                = getStockRequestDto("/stock/getStockPlacesFreeSpaceByStockId.req.json");
+        StockFreeSpaceInMapDto getFromJson
+                = getFromJson("/stock/getStockPlacesFreeSpaceByStockId.resp.json", StockFreeSpaceInMapDto.class);
+        ParameterizedTypeReference<ResponseDto<StockFreeSpaceInMapDto>> parameterizedTypeReferenceResponse =
+                new ParameterizedTypeReference<>() {
+                };
+
+        ResponseEntity<ResponseDto<StockFreeSpaceInMapDto>> responseEntity
+                = testRestTemplate.exchange(resourceUrl + "stockPlacesFreeSpaceByStockId/" + stockRequestDto.getStockId(),
+                HttpMethod.GET, null, parameterizedTypeReferenceResponse);
+        StockFreeSpaceInMapDto data = responseEntity.getBody().getData();
+        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(data.getStockPlaceIdFreeSpaceByStockId()).isEqualTo(getFromJson.getStockPlaceIdFreeSpaceByStockId());
+    }
+
+    //вывод списка всех складских мест по id склада
+    @Test
+    void testGetAllStockPlacesByStockId() {
+        StockRequestDto stockRequestDto = getStockRequestDto("/stock/getStockPlacesByStockId.req.json");
+        StockResponseDto stockResponseDto = getStockResponseDto("/stock/getStockPlacesByStockId.resp.json");
+
+        ResponseEntity<ResponseDto<StockResponseDto>> responseEntity
+                = testRestTemplate.exchange(resourceUrl + "allByStockId/" + stockRequestDto.getStockId(),
+                HttpMethod.GET, null, STOCK_RESPONSE);
+
+        StockResponseDto data = responseEntity.getBody().getData();
+        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(data.getStockPlaceList()).isEqualTo(stockResponseDto.getStockPlaceList());
+
+    }
+
     //выполняет get-запрос и проверку ожидаемого и запрашиваемого
     void testGet(String id, StockResponseDto stockResponseDto) {
-
         /* подставляем id(взятый из новосозданной сущности) в url и сверяем с тем, что получилось
          * Вместо Wrapper. Формируем ответ сервера (выполнение метода /get) */
-        ResponseEntity<ResponseDto<StockResponseDto>> responseEntity =
-                testRestTemplate.exchange(resourceUrl + id, HttpMethod.GET, null, STOCK_RESPONSE);
-
+        ResponseEntity<ResponseDto<StockResponseDto>> responseEntity
+                = testRestTemplate.exchange(resourceUrl + id, HttpMethod.GET, null, STOCK_RESPONSE);
         StockResponseDto data = responseEntity.getBody().getData();
 
         //всякме тесты на соответствие и тд
+        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(data).isNotNull();
         assertThat(data.getName()).isEqualTo(stockResponseDto.getName());
         assertThat(data.getCity()).isEqualTo(stockResponseDto.getCity());
@@ -148,32 +222,25 @@ class StockTests extends BaseApplicationTest {
 
     //Создаёт entity и получаем id entity из бд
     private Long createStock(StockRequestDto stockRequestDto) {
-
         //формирует Http-запрос с DTO новой сущности для получения данных об Entity
         RequestEntity<StockRequestDto> requestEntity =
                 RequestEntity.post(URI.create(resourceUrl)).contentType(MediaType.APPLICATION_JSON).body(stockRequestDto);//в body пихаем dto
-
         //получаем только id из бд, чтобы не тащить все данные оттуда (в контроллере надо вернуть значение id после записи в бд)
         Long id = testRestTemplate.postForObject(resourceUrl, requestEntity, Long.class);
-
         //проверка на null
         assertThat(id).isNotNull();
-
         return id;
     }
 
     //метод для получения id сущности при создании из JSON + тесты на null + get-тесты
     private Long createAndTestStock(String jsonFileName) {
-
         /* создаем и подставляем значения в RequestDto из преобразованного json: addNewProduct.req.json
          * подставляем значения из преобразованного json: addNewProduct.req.json
          * вытаскиваем ID из созданной сущности */
         Long id = createStock(getStockRequestDto(jsonFileName));
-
         //подставляем значения из преобразованного json: addNewProduct.req.json
         // и тестируем на то, что все записалось
         testGet(String.valueOf(id), getStockResponseDto(jsonFileName));
-
         return id;
     }
 
@@ -187,18 +254,6 @@ class StockTests extends BaseApplicationTest {
         return getFromJson(jsonFileNameResp, StockResponseDto.class);
     }
 }
-/* Wrapper используем, как альтернативный способ получить вложенный ответ из response;
- *  Альтернативный от ParameterizedTypeReference<<>>
- *  Урезанная копия ResponseDto
- *  Плохо тем, что (частино) копирует ResponseDto */
-
-   /* public static class StockDtoWrapper {
-        public StockResponseDto data;
-    }
-
-    //использование Wrapper
-    StockDtoWrapper wrapper = testRestTemplate.getForObject(resourceUrlId, StockDtoWrapper.class);
-    StockResponseDto data = wrapper.data; */
 
 
 

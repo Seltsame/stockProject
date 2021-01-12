@@ -5,23 +5,31 @@ import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
 import java.util.Set;
 
 @Repository
 public interface ProductOnStockPlaceRepository extends CrudRepository<ProductOnStockPlace, Long> {
 
-    //товар на полке по id склада
-    @Query("SELECT psp FROM ProductOnStockPlace psp JOIN Stock s ON s.id = psp.stockPlace.stock.id where s.id =:stock_id")
-    Set<ProductOnStockPlace> getProductOnStockPlaceByStockId(@Param("stock_id") Long stock_id);
+    Optional<ProductOnStockPlace> getByStockPlaceId(Long stockPlaceId);
 
+   /* Первая реализация запроса и метода для получения stockPlace - freeSpace. В query генерируется запрос и пишется
+    сразу в Map.
+    Стрим в Integer[] из id полки и сумме товаров на полке по id склада, запрос на вывод сразу в Map
+    id - количество товара на месте.*/
+   /*  @Query("SELECT new javafx.util.Pair(sp.id, sum(psp.quantityProduct)) FROM ProductOnStockPlace psp " +
+            "JOIN StockPlace sp ON sp = psp.stockPlace " +
+            "where sp.id =:stock_id GROUP BY sp")
+    Stream<javafx.util.Pair<Long, Long>>getQuantityProductOnStockPlaceByStockId(@Param("stock_id") Long stock_id);*/
 
+    //вторая из реализаций запроса и метода для получения stockPlace - freeSpace
+    @Query("FROM ProductOnStockPlace psp " +
+            "JOIN StockPlace sp ON sp = psp.stockPlace " +
+            "where sp.id =:stock_id ")
+    Set<ProductOnStockPlace> getQuantityProductOnStockPlaceByStockId(@Param("stock_id") Long stock_id);
 
-    //правильность написания метода
-   /* @Query("SELECT coalesce(max(quantityProduct), 0) FROM ProductOnStockPlace WHERE stockPlace.id =:stock_place_id")
-    int getMaxQuantityProduct(@Param("stock_place_id") Long stock_place_id);*/
-
-    //выбор максимального  количества продукта в stockPlace конкретного stock по stock_ID
-    @Query("SELECT q.quantityProduct FROM ProductOnStockPlace q JOIN StockPlace psp on psp.stock.id = :stock_id")
-    int getMaxQuantityProduct(@Param("stock_id") Long stockId);
-
-}
+    //выбор максимального количества продукта в stockPlace конкретного stock по stock_ID
+    @Query("SELECT sum(psp.quantityProduct) FROM ProductOnStockPlace psp " +
+            "JOIN StockPlace sp on sp = psp.stockPlace WHERE sp.stock.id = :stock_id ")
+    long getSumQuantityProductByStockId(@Param("stock_id") Long stock_id);
+    }

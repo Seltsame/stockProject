@@ -1,6 +1,9 @@
 package ru.rosketscience.test.product;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import ru.rosketscience.test.stockPlace.StockPlaceResponseDto;
 
 import java.math.BigDecimal;
@@ -15,6 +18,4 @@ public class ProductResponseDto {
     String name;
     BigDecimal price;  //нужно для того, чтобы были null значения, вместо 0
     StockPlaceResponseDto stockPlaceDto;
-    int quantityProduct;
-
-}
+    }

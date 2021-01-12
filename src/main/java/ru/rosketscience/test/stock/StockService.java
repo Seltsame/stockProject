@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Service;
 import ru.rosketscience.test.ValidateException;
+import ru.rosketscience.test.common.ResponseDto;
 import ru.rosketscience.test.productOnStockPlace.ProductOnStockPlace;
 import ru.rosketscience.test.productOnStockPlace.ProductOnStockPlaceRepository;
 import ru.rosketscience.test.stockPlace.StockPlace;
@@ -15,7 +16,6 @@ import javax.transaction.Transactional;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -24,7 +24,6 @@ class StockService {
 
     private final StockRepository stockRepository;
     private final StockPlaceRepository stockPlaceRepository;
-   // private final ProductOnStockPlace productOnStockPlace;
     private final ProductOnStockPlaceRepository productOnStockPlaceRepository;
     private final StockMapper stockMapper;
     private final StockPlaceMapper stockPlaceMapper;
@@ -54,7 +53,6 @@ class StockService {
         return stockMapper.fromEntity(stockById);
     }
 
-    //НУЖЕН ЛИ @Transactional?
     //возвращаем ID после записи в репозиторий(если это нужно, если нет - void)
     Long add(StockRequestDto stockRequestDto) {
         Stock addStock = stockRepository.save(stockMapper.toEntity(stockRequestDto));
@@ -81,29 +79,19 @@ class StockService {
         stockRepository.save(stockToUpdate); //
     }
 
-
-    //на это теста ещё нет!!!
-    //смотри сюда!!!
-    //вывод максимального количества мсест на складе - не свободных, пока что, просто мест, без привязки к количеству продукта!
+    //вывод максимального количества свободных мест на складе
     @Transactional
-    public int getStockCapacity(Long id) {
-        int maxCapacity = 0;
-        List<StockPlace> allByStockId = stockPlaceRepository.findAllByStockId(id);
-        /*int freeSpace2 = productOnStockPlace.getStockPlace().getCapacity()
-                - productOnStockPlace.getQuantityProduct();*/
-        int freeSpace = stockPlaceRepository.getStockPlaceCapacity(id)
-                - productOnStockPlaceRepository.getMaxQuantityProduct(id);
-        for (StockPlace stockPlace : allByStockId) {
-            maxCapacity = stockPlace.getCapacity() - freeSpace;
-            maxCapacity += maxCapacity;
-        }
-        return maxCapacity;
+    public Long getStockCapacity(Long id) {
+        Stock stock = stockRepository.getById(id).orElseThrow(()
+                -> new ValidateException("Склада с id = " + id + " не существует!"));
+        Long stockPlaceId = stock.getId();
+        return stockPlaceRepository.getSumStockPlaceCapacity(stockPlaceId) -
+                productOnStockPlaceRepository.getSumQuantityProductByStockId(stockPlaceId);
     }
 
-    //теста нет!
     //поиск и вывод списка складов по городу
     @Transactional
-    StockResponseDto getStockListByCityName(String cityName) {
+    StockListResponseDto getStockListByCityName(String cityName) {
         if (cityName.isEmpty()) {
             throw new ValidateException("Нельзя выбрать пустой город!");
         }
@@ -111,52 +99,110 @@ class StockService {
                 .map(stockMapper::fromEntity) //stock -> stockMapper.fromEntity(stock)
                 .map(StockResponseDto::getName)
                 .collect(Collectors.toList());
-        return StockResponseDto.builder()
+        return StockListResponseDto.builder()
                 .stockList(stockNameList)
                 .build();
     }
 
     //вывод полка - свободное место
     @Transactional
-    public StockCapacityDto getStockPlacesFreeSpace(Long stockId) {
+    public StockFreeSpaceInMapDto getStockPlacesFreeSpace(Long stockId) {
         //проверяем склад на существование
         stockRepository.findById(stockId).orElseThrow(()
                 -> new ValidateException("Склада с таким id: " + stockId + " не существует"));
-        //берем сет товаров из репозитория по ID склада -> Складское место, с помощью custom @Query запроса
-        Set<ProductOnStockPlace> allByStockPlaceId
-                = productOnStockPlaceRepository.getProductOnStockPlaceByStockId(stockId);
+
+        Map<Long, Long> stockPlaceCapacityByStockId = new HashMap<>();
+        List<StockPlace> allByStockIdList = stockPlaceRepository.findAllByStockId(stockId);
+        allByStockIdList.forEach(stockPlace -> {
+            Long id = stockPlace.getId();
+            long capacity = stockPlace.getCapacity();
+            stockPlaceCapacityByStockId.put(id, capacity);
+        });
+        /* Как вариант - можно сразу подготовить Query-запрос с выводом в Map и работать с ним. См. Query в ProductOnStockPlaceRepository
+        с Pair of */
+        //= stockPlaceRepository.getStockPlaceIdAndCapacityByStockId(stockId);
+       /* Map<Long, Long> stockPlaceQuantity = productOnStockPlaceRepository.getQuantityProductOnStockPlaceByStockId(stockId)
+                .collect(Collectors.toMap(pair -> pair.getKey(), pair -> pair.getKey()));*/
+
+        Map<Long, Long> stockPlaceQuantity
+                = productOnStockPlaceRepository.getQuantityProductOnStockPlaceByStockId(stockId)
+                .stream()
+                .collect(Collectors.toMap(ProductOnStockPlace::getId, ProductOnStockPlace::getQuantityProduct));
+
+        Map<Long, Long> stockPlaceFreeSpace = new HashMap<>();
+
+        for (Map.Entry<Long, Long> entry : stockPlaceCapacityByStockId.entrySet()) {
+            long resultFreeSpace = entry.getValue() - stockPlaceQuantity.getOrDefault(entry.getKey(), 0L);
+            if (resultFreeSpace > 0) {
+                stockPlaceFreeSpace.put(entry.getKey(), resultFreeSpace);
+            }
+        }
+        return StockFreeSpaceInMapDto.builder()
+                .stockPlaceIdFreeSpaceByStockId(stockPlaceFreeSpace)
+                .build();
+    }
+    //альтернативный вариант решения, не самый правильный, тк часто дергаем бд в ForEach
+    //если не использовать custom query запрос
+    //берем сет товаров из репозитория по ID склада -> Складское место, с помощью custom @Query запроса
+        /*Map<Long, Long> stockPlaceCapacity = new HashMap<>();
+        List<StockPlace> allByStockIdList = stockPlaceRepository.findAllByStockId(stockId);
+        allByStockIdList.forEach(stockPlace -> {
+            Long id = stockPlace.getId();
+            long capacity = stockPlace.getCapacity();
+            stockPlaceCapacity.put(id, capacity);
+        });*/
+    //если будет null, То getOrDefault вернет 0
+
+    //с помощью кастомного Query запроса сразу пишем stockPlaceId + Capacity в map
+       /*
+       + см запрос:
+
+    @Query("FROM ProductOnStockPlace psp JOIN StockPlace sp ON sp.id = psp.stockPlace.id where sp.id =:stock_id")
+    Set<ProductOnStockPlace> getProductOnStockPlaceByStockId2(@Param("stock_id") Long stock_id);
+       и развертка сета
+
+       Set<ProductOnStockPlace> getProductOnStockPlaceByStockId
+               = productOnStockPlaceRepository.getProductOnStockPlaceByStockId2(stockId);
+        Map<Long, Long> productQuantityInStock = new HashMap<>();
+        getProductOnStockPlaceByStockId.forEach(productOnStockPlace -> {
+            Long stockPlaceId = productOnStockPlace.getStockPlace().getId();
+            Long quantityProductInStockPlace = productOnStockPlace.getQuantityProduct();
+            productQuantityInStock.put(stockPlaceId, quantityProductInStockPlace);
+        });
+
+        Map<Long, Long> freeSpaceInStock = new HashMap<>();
+        freeSpaceInStock.forEach((k, v) -> {
+
+        });
+
+        Set<ProductOnStockPlace> allByStockId
+                = productOnStockPlaceRepository.getProductOnStockPlaceByStockId2(stockId);
         //выводим в HashMap: id stockPlace : freeSpace
-        Map<Long, Integer> freeSpaceByStockId = new HashMap<>();
-        allByStockPlaceId.forEach(productOnStockPlace -> {
+        Map<Long, Long> freeSpaceByStockId = new HashMap<>();
+        allByStockId.forEach(productOnStockPlace -> {
             //freeSpace рассчитывается исходя из количества товара и свободного места неа полке
 
-            //как верно из двух ниже?
-            /*
-            int maxQuantityProductOnStockPlace
-                    = productOnStockPlaceRepository.getMaxQuantityProduct(productOnStockPlace.getStockPlace().getId());
-            int freeSpace = productOnStockPlace.getStockPlace().getCapacity()
+            Long stockPlaceId = productOnStockPlace.getStockPlace().getId();
+            long maxQuantityProductOnStockPlace
+                    = productOnStockPlaceRepository.getSumQuantityProduct(stockPlaceId);
+            long freeSpace = stockPlaceRepository.getSumStockPlaceCapacity(stockPlaceId)
                     - maxQuantityProductOnStockPlace;
-                    */
-            int freeSpace = productOnStockPlace.getStockPlace().getCapacity()
-                    - productOnStockPlace.getQuantityProduct();
-            freeSpaceByStockId.put(productOnStockPlace.getStockPlace().getId(), freeSpace);
-        });
-        return StockCapacityDto.builder()
-                .freeSpaceByStockId(freeSpaceByStockId)
-                .build();
-    }
+            if (freeSpace > 0) {
+                freeSpaceByStockId.put(productOnStockPlace.getStockPlace().getId(), freeSpace);
+            }
+        });*/
 
-    //поиск мест по ид склада
-    public StockListStockPlaceDto getStockPlaceByStockId(Long id) {
-        List<StockPlaceResponseDto> stockPlaceList = stockPlaceRepository.findAllByIdOrderByShelf(id).stream()
-                .map(stockPlaceMapper::fromEntity)
+    //поиск и вывод в list всех мест по ид склада
+    public StockResponseDto getStockPlaceByStockId(Long id) {
+        stockRepository.findById(id).orElseThrow(()
+                -> new ValidateException("Склада с таким id: " + id + " не существует"));
+        List<StockPlace> stockPlacesByStockId = stockPlaceRepository.findStockPlacesByStockId(id);
+        List<StockPlaceResponseDto> collect = stockPlacesByStockId.stream()
+                .map(stockPlace -> stockPlaceMapper.fromEntity(stockPlace))
                 .collect(Collectors.toList());
-        return StockListStockPlaceDto.builder()
-                .stockPlaceList(stockPlaceList)
+
+        return StockResponseDto.builder()
+                .stockPlaceList(collect)
                 .build();
     }
-
-
 }
-
-

@@ -7,7 +7,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import ru.rosketscience.test.ValidateException;
 import ru.rosketscience.test.common.ResponseDto;
-import ru.rosketscience.test.stockPlace.StockPlaceResponseDto;
 
 
 @RestController
@@ -19,7 +18,6 @@ public class StockController {
     private final StockService stockService;
 
     @GetMapping(path = "/{id}")
-        //@ResponseBody
         // ResponseDto<StockResponseDto> - через спец DTO (которая разделяется на err и data) пропускаем рабочую DTO
     ResponseDto<StockResponseDto> getById(@PathVariable Long id) {
         //ставим log.debug(входящие параметры лучше логировать на уровне debug):
@@ -31,45 +29,48 @@ public class StockController {
         // на выходе имеем result, err == null
     }
 
-    //напиши тест!!!
-    @GetMapping(path = "/maxCapacityStock/{id}")
-    int maxStockCapacity(@PathVariable Long id) {
+    @GetMapping(path = "/maxCapacityInStock/{id}")
+    ResponseDto<Long> maxStockCapacity(@PathVariable Long id) {
         log.debug("maxStockCapacity: started with id: {}", id);
-        int stockCapacity = stockService.getStockCapacity(id);
-        log.info("maxStockCapacity: finished for id: {} with stock capacity: {}", id, stockCapacity);
-        return stockCapacity;
+        long result = stockService.getStockCapacity(id);
+        log.info("maxStockCapacity: finished for id: {} with stock capacity: {}", id, result);
+        return new ResponseDto<>(null, result);
     }
 
-    //напиши тест!!!
     @GetMapping(path = "/stockListByCityName/{cityName}")
-    ResponseDto<StockResponseDto> getStockListByCityName(@PathVariable String cityName) {
+    ResponseDto<StockListResponseDto> getStockListByCityName(@PathVariable String cityName) {
         log.debug("getStockListByCityName: started with city name: {}", cityName);
-        StockResponseDto result = stockService.getStockListByCityName(cityName);
+        StockListResponseDto result = stockService.getStockListByCityName(cityName);
         log.info("getStockListByCityName: finished for city name: {}, with result: {}", cityName, result);
         return new ResponseDto<>(null, result);
     }
 
-    //напиши тест!!!
+
+    //вывод списка всех складских мест по id склада
     @GetMapping(path = "/allByStockId/{id}")
-    ResponseDto<StockListStockPlaceDto> getAllByStockId(@PathVariable Long id) {
+    ResponseDto<StockResponseDto> getAllByStockId(@PathVariable Long id) {
         log.debug("getAllByStockId: started with id: {}", id);
-        StockListStockPlaceDto result = stockService.getStockPlaceByStockId(id);
+        StockResponseDto result = stockService.getStockPlaceByStockId(id);
         log.info("getAllByStockId: finished for id: {}, with result: {}", id, result);
         return new ResponseDto<>(null, result);
     }
 
-    //напиши тест!!!
-    @GetMapping(path = "/allFreeSpace/{id}")
-    ResponseDto<StockCapacityDto> getAllFreeSpaceByStockId(@PathVariable Long id) {
+
+    //вывод Map id склада - свободное место
+    @GetMapping(path = "/stockPlacesFreeSpaceByStockId/{id}")
+    ResponseDto<StockFreeSpaceInMapDto> getStockPlacesFreeSpaceByStockId(@PathVariable Long id) {
         log.debug("getAllFreeSpaceByStockId: started with id: {}", id);
-        StockCapacityDto result = stockService.getStockPlacesFreeSpace(id);
+        StockFreeSpaceInMapDto result = stockService.getStockPlacesFreeSpace(id);
         log.info("getAllFreeSpaceByStockId: finished for id: {}, with result: {}", id, result);
         return new ResponseDto<>(null, result);
     }
 
     @PostMapping
     Long add(@RequestBody StockRequestDto stockRequestDto) {
-        return stockService.add(stockRequestDto);
+        log.debug("add: started with data: {}", stockRequestDto);
+        Long result = stockService.add(stockRequestDto);
+        log.info("add: finished with data: {}", stockRequestDto);
+        return result;
     }
 
     @DeleteMapping(path = "/{id}")

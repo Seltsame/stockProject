@@ -1,14 +1,16 @@
 package ru.rosketscience.test.stock;
 
-import lombok.*;
-import ru.rosketscience.test.stockPlace.StockPlace;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import ru.rosketscience.test.stockPlace.StockPlaceResponseDto;
 
 import java.util.List;
 
 
-@Builder
 @Data
+@Builder
 @AllArgsConstructor
 @NoArgsConstructor
 public class StockResponseDto {
@@ -17,8 +19,7 @@ public class StockResponseDto {
     String name;
     String city;
 
-     List<String> stockList;
+    StockPlaceResponseDto stockPlaceResponseDto;
 
-     List<StockPlace> stockPlaceList;
-     StockPlaceResponseDto stockPlaceResponseDto;
+    List<StockPlaceResponseDto> stockPlaceList;
 }

@@ -15,7 +15,7 @@ configurations {
 }
 compileJava {
     options.compilerArgs += "-Amapstruct.defaultComponentModel=spring"
-    //Чтобы не писать @Mapper((componentModel = "spring"))
+    //Чтобы не писать @Mapper(componentModel = "spring")
     options.compilerArgs += "-Amapstruct.unmappedTargetPolicy=IGNORE" //Чтобы не писать каждый раз в Mapper
     // unmappedTargetPolicy = ReportingPolicy.IGNORE
 }
@@ -26,8 +26,7 @@ repositories {
 
 ext {
     set('testcontainersVersion', "1.15.0")
-  //  set('mapstructVersion', '1.4.1.Final')
-}
+ }
 
 dependencies {
     compileOnly 'org.projectlombok:lombok'
@@ -40,8 +39,8 @@ dependencies {
     implementation 'io.springfox:springfox-swagger-ui:2.7.0' //подключение Swagger
     compile 'commons-io:commons-io:2.8.0' //вызов IOUtils.toString в Util классе
     runtimeOnly 'org.postgresql:postgresql'
-    annotationProcessor 'org.mapstruct:mapstruct-processor:1.4.1.Final' //подключение mapStruct
     annotationProcessor 'org.projectlombok:lombok'
+    annotationProcessor 'org.mapstruct:mapstruct-processor:1.4.1.Final' //подключение mapStruct
     testImplementation('org.springframework.boot:spring-boot-starter-test') {
         exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
     }

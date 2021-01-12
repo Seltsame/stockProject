@@ -4,19 +4,15 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import ru.rosketscience.test.stockPlace.StockPlaceResponseDto;
-
-import java.math.BigDecimal;
 
 @Builder
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class ProductRequestDto {
+public class ProductPlacementDto {
 
-    String name;
-    BigDecimal price;
+    long productId;
     long stockPlaceId;
+    long quantityProduct; //добавление n-количества товара
 
-    public StockPlaceResponseDto stockPlaceResponseDto;
 }

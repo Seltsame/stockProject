@@ -18,7 +18,7 @@ public class StockPlaceController {
 
     @GetMapping(path = "/{id}")
     ResponseDto<StockPlaceResponseDto> getById(@PathVariable Long id) {
-        log.debug("get: Started with id: {}", id);
+        log.debug("get: started with id: {}", id);
         StockPlaceResponseDto result = stockPlaceService.getById(id);
         log.info("get: finished for id: {}, with result: {}", id, result);
         return new ResponseDto<>(null, result);
@@ -26,13 +26,19 @@ public class StockPlaceController {
 
     @PostMapping
     Long add(@RequestBody StockPlaceRequestDto stockPlaceRequestDto) {
-        return stockPlaceService.add(stockPlaceRequestDto);
+        log.debug("add: started with data: {}", stockPlaceRequestDto);
+        Long result = stockPlaceService.add(stockPlaceRequestDto);
+        log.info("add: finished with data: {}", result);
+        return result;
     }
-//напиши тест!!!
+
     @PostMapping(path = "/addStockPlaces")
     @ResponseBody
-    int addStockPlaces(@RequestBody StockPlaceBunchRequestDto stockPlaceBunchRequestDto) {
-        return stockPlaceService.addStockPlaces(stockPlaceBunchRequestDto);
+    int addStockPlaces(@RequestBody ManyStockPlacesRequestDto manyStockPlacesRequestDto) {
+        log.debug("addStockPlaces: started with data: {}", manyStockPlacesRequestDto);
+        int result = stockPlaceService.addStockPlaces(manyStockPlacesRequestDto);
+        log.info("addStockPlaces: finished with data: {}", result);
+        return result;
     }
 
     @DeleteMapping(path = "/{id}")

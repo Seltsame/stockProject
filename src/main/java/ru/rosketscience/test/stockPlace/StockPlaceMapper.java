@@ -8,4 +8,4 @@ public interface StockPlaceMapper {
     StockPlaceResponseDto fromEntity(StockPlace stockPlace);
 
     StockPlace toEntity(StockPlaceRequestDto stockPlaceRequestDto);
-    }
+}

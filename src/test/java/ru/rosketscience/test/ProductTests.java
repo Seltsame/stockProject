@@ -7,8 +7,11 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import ru.rosketscience.test.common.ResponseDto;
+import ru.rosketscience.test.product.ProductPlacementDto;
 import ru.rosketscience.test.product.ProductRequestDto;
 import ru.rosketscience.test.product.ProductResponseDto;
+import ru.rosketscience.test.stock.StockFreeSpaceResponseDto;
+import ru.rosketscience.test.stock.StockRequestDto;
 
 import java.net.URI;
 
@@ -63,7 +66,7 @@ public class ProductTests extends BaseApplicationTest {
     void testAdd() {
 
         //создаём, тестируем entity из json-файла и возвращаем id
-        createAndTestProduct(jsonFileNameReq);
+        createAndTestProductForStockMethods(jsonFileNameReq);
     }
 
     //тест delete-метода
@@ -75,7 +78,7 @@ public class ProductTests extends BaseApplicationTest {
         ProductRequestDto getFromJson
                 = getFromJson(jsonFileNameReq, ProductRequestDto.class);
         //создаём Entity, записываем в базу, сразу же возвращаем её ID
-        Long id = createProduct(getFromJson);
+        Long id = createProductForStockMethods(getFromJson);
 
         //проверка на то, что все хорошо записалось
         testGet(String.valueOf(id), getFromJson(jsonFileNameReq, ProductResponseDto.class));
@@ -93,7 +96,7 @@ public class ProductTests extends BaseApplicationTest {
         String jsonFileName = "/product/updateProduct.req.json";
         String jsonFileNameUdp = "/product/updateProduct.resp.json";
 
-        Long id = createAndTestProduct(jsonFileName);
+        Long id = createAndTestProductForStockMethods(jsonFileName);
 
         //создаем DTO с новыми данными и подставляем значения из преобразованного json: updateProduct.resp.json
         ProductRequestDto createProductUpd
@@ -110,20 +113,59 @@ public class ProductTests extends BaseApplicationTest {
         testGet(String.valueOf(id), getProductResponseDto(jsonFileNameUdp));
     }
 
+    // добавление нескольких продуктов на stockPlace
+    /* Чтобы правильно проверить работу метода, мы берем метод из Stock тестов по выводу остатка свободных мест на складе.
+     * считаем показатели до и сравниваем с предполагаемыми и показатели после и сравниваем с предполагаемыми(с учётом
+     * добавления количества товара)*/
+    @Test
+    void testAddProductsToStockPlace() {
+        String resourceUrlForStock = "http://localhost:" + port + "/stock/maxCapacityInStock/";
+        String resourceUrlAddProducts = resourceUrl + "addProducts/";
+        StockFreeSpaceResponseDto stockResponseDtoAfter = getFromJson(
+                "/product/getMaxCapacityInStockAfterAddingProducts.resp.json", StockFreeSpaceResponseDto.class);
+        ProductPlacementDto productPlacementDto
+                = getFromJson("/product/addManyNewProducts.req.json", ProductPlacementDto.class);
+        StockRequestDto stockRequestDto
+                = getFromJson("/stock/getMaxCapacityInStock.req.json", StockRequestDto.class);
+        ParameterizedTypeReference<ResponseDto<Long>> parameterizedTypeReferenceResponse =
+                new ParameterizedTypeReference<>() {
+                };
+
+        ResponseEntity<ResponseDto<Long>> responseEntityBeforeAddingProduct
+                = testRestTemplate.exchange(resourceUrlForStock + stockRequestDto.getStockId(),
+                HttpMethod.GET, null, parameterizedTypeReferenceResponse);
+        assertThat(responseEntityBeforeAddingProduct.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(responseEntityBeforeAddingProduct.getBody()).isNotNull();
+
+        RequestEntity<ProductPlacementDto> requestEntity
+                = RequestEntity.post(URI.create(resourceUrlAddProducts)).contentType(MediaType.APPLICATION_JSON)
+                .body(productPlacementDto);
+
+        ResponseEntity<Void> responseEntity = testRestTemplate.exchange(requestEntity, Void.class);
+        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        ResponseEntity<ResponseDto<Long>> responseEntityAfterAddingProduct
+                = testRestTemplate.exchange(resourceUrlForStock + stockRequestDto.getStockId(),
+                HttpMethod.GET, null, parameterizedTypeReferenceResponse);
+        ResponseDto<Long> responseEntityAfter = responseEntityAfterAddingProduct.getBody();
+        assertThat(responseEntityAfterAddingProduct.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(responseEntityAfter).isNotNull();
+        assertThat(responseEntityAfter.getData()).isEqualTo(stockResponseDtoAfter.getStockFreeSpace());
+    }
+
     //обезличенный get-test
     void testGet(String id, ProductResponseDto productResponseDto) {
 
         ResponseEntity<ResponseDto<ProductResponseDto>> response
                 = testRestTemplate.exchange(resourceUrl + id, HttpMethod.GET, null, PRODUCT_RESPONSE);
         ProductResponseDto data = response.getBody().getData();
-
         assertThat(data).isNotNull();
         assertThat(data.getName()).isEqualTo(productResponseDto.getName());
         assertThat(data.getPrice()).isEqualTo(productResponseDto.getPrice());
     }
 
     //СОЗДАНИЕ сущности и получение id свежезаписанной entity в бд
-    private Long createProduct(ProductRequestDto productRequestDto) {
+    private Long createProductForStockMethods(ProductRequestDto productRequestDto) {
 
         //формирует Http-запрос с DTO новой сущности для получения данных об Entity
         RequestEntity<ProductRequestDto> requestEntity =
@@ -133,17 +175,16 @@ public class ProductTests extends BaseApplicationTest {
         /* получаем только id из бд, чтобы не тащить все данные оттуда
         (в контроллере надо вернуть значение id после записи в бд)*/
         Long id = testRestTemplate.postForObject(resourceUrl, requestEntity, Long.class);
-
         assertThat(id).isNotNull();
         return id;
     }
 
     //метод для получения id сущности при создании из JSON + тесты на null + get-тесты
-    private Long createAndTestProduct(String jsonFileName) {
+    private Long createAndTestProductForStockMethods(String jsonFileName) {
 
         //подставляем значения из преобразованного json: addNewProduct.req.json
         //берем id сущности
-        Long id = createProduct(getProductRequestDto(jsonFileName));
+        Long id = createProductForStockMethods(getProductRequestDto(jsonFileName));
 
         //подставляем значения из преобразованного json: addNewProduct.req.json
         testGet(String.valueOf(id), getProductResponseDto(jsonFileName));

@@ -44,6 +44,7 @@ public class BaseApplicationTest {
     @LocalServerPort
     protected int port;
 
+
     public static String resourceUrl;
 
     //создаем метод, который возвращает предыдущий метод, только с вложенным objectMapper

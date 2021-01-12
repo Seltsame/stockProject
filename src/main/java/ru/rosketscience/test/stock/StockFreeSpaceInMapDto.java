@@ -5,14 +5,13 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Map;
 
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class StockRequestDto {
+public class StockFreeSpaceInMapDto {
 
-    long stockId;
-    String name;
-    String city;
+    Map<Long, Long> stockPlaceIdFreeSpaceByStockId;
 }

@@ -17,7 +17,7 @@ public class MyTestApplication {
 		SpringApplication.run(MyTestApplication.class, args);
 			}
 
-	@Bean
+	@Bean //бин на swagger
 	public Docket productApi() {
 		return new Docket(DocumentationType.SWAGGER_2).select()
 				.apis(RequestHandlerSelectors.basePackage("ru.rosketscience.test")).build();

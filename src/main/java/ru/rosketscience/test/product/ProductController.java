@@ -27,13 +27,18 @@ public class ProductController {
 
     @PostMapping
     Long add(@RequestBody ProductRequestDto productRequestDto) {
-        return productService.add(productRequestDto);
+        log.debug("add: started with data: {}", productRequestDto);
+        Long result = productService.add(productRequestDto);
+        log.info("add: finished for with result: {}", result);
+        return result;
     }
 
-    //напишши тест!!!
     @PostMapping(path = "/addProducts")
-    Long addProducts(@RequestBody ProductBunchRequestDto productBunchRequestDto) {
-        return productService.addProductsToStockPlace(productBunchRequestDto);
+    @ResponseBody
+    void addProducts(@RequestBody ProductPlacementDto productPlacementDto) {
+        log.debug("addProducts: started with data: {}", productPlacementDto);
+        productService.addProductsToStockPlace(productPlacementDto);
+        log.info("addProducts: finished for data: {}", productPlacementDto);
     }
 
     @DeleteMapping(path = "{id}")
@@ -45,7 +50,7 @@ public class ProductController {
 
     @PutMapping(path = "{id}")
     void update(@RequestBody ProductRequestDto productRequestDto, @PathVariable Long id) {
-        log.debug("update: starter with: + {}", id);
+        log.debug("update: started with id: + {}", id);
         productService.update(id, productRequestDto);
         log.info("update: finished for id: {}", id);
     }

@@ -1,7 +1,7 @@
 {
-
-  "rowName": "Первый",
-  "shelfNumber": 2,
-  "shelfCapacity": 10,
+  "row": "Первый_тестовый",
+  "capacity": 10,
+  "stockPlaceQuantity": 5,
   "stockId": 2
 }
+

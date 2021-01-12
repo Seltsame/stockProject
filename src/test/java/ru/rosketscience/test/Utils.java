@@ -7,13 +7,11 @@ import org.testcontainers.shaded.org.apache.commons.io.IOUtils;
 
 import java.io.InputStream;
 
-
 //@ - аннотация спец Util-class
 @UtilityClass
 //специальный класс для ковертации JSON в POJO и наоборот
 @Slf4j
 public class Utils {
-
     /*
         метод для ковертации Json в Pojo:
         <T> - принимаем  параметр такого типа <T>

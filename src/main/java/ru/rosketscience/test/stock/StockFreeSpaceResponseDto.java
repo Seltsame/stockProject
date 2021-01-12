@@ -5,14 +5,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class StockRequestDto {
+public class StockFreeSpaceResponseDto {
 
-    long stockId;
-    String name;
-    String city;
+    long stockFreeSpace;
 }
