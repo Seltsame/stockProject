@@ -34,7 +34,6 @@ public class ProductController {
     }
 
     @PostMapping(path = "/addProducts")
-    @ResponseBody
     void addProducts(@RequestBody ProductPlacementDto productPlacementDto) {
         log.debug("addProducts: started with data: {}", productPlacementDto);
         productService.addProductsToStockPlace(productPlacementDto);
@@ -53,6 +52,14 @@ public class ProductController {
         log.debug("update: started with id: + {}", id);
         productService.update(id, productRequestDto);
         log.info("update: finished for id: {}", id);
+    }
+
+    @PostMapping(path = "/exchangeProduct")
+    ResponseDto<ProductMovementResponseDto> moveProductsBetweenStocks(@RequestBody ProductMovementRequestDto productMovementRequestDto) {
+        log.debug("moveProductsBetweenStocks: started with data: {}", productMovementRequestDto);
+        ProductMovementResponseDto result = productService.movementProductsBetweenStocks(productMovementRequestDto);
+        log.info("moveProductsBetweenStocks: finished with data: {}", productMovementRequestDto);
+        return new ResponseDto<>(null, result);
     }
 
     @ExceptionHandler

@@ -7,9 +7,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import ru.rosketscience.test.common.ResponseDto;
-import ru.rosketscience.test.product.ProductPlacementDto;
-import ru.rosketscience.test.product.ProductRequestDto;
-import ru.rosketscience.test.product.ProductResponseDto;
+import ru.rosketscience.test.product.*;
 import ru.rosketscience.test.stock.StockFreeSpaceResponseDto;
 import ru.rosketscience.test.stock.StockRequestDto;
 
@@ -151,6 +149,116 @@ public class ProductTests extends BaseApplicationTest {
         assertThat(responseEntityAfterAddingProduct.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(responseEntityAfter).isNotNull();
         assertThat(responseEntityAfter.getData()).isEqualTo(stockResponseDtoAfter.getStockFreeSpace());
+    }
+
+    @Test
+    void movementProductsBetweenStocks() {
+
+        String resourceUrlMovementProducts = resourceUrl + "moveProducts/";
+        ProductMovementRequestDto productMovementRequestDto
+                = getFromJson("/product/movementProductsBetweenStocks.req.json", ProductMovementRequestDto.class);
+
+        ProductMovementResponseDto productMovementResponseDto
+                = getFromJson("/product/movementProductsBetweenStocks.resp.json", ProductMovementResponseDto.class);
+
+        ResponseEntity<ProductMovementResponseDto> responseFromOldStock
+                = testRestTemplate.exchange(resourceUrlMovementProducts + productMovementRequestDto.getProductId(), HttpMethod.GET,
+                null, ProductMovementResponseDto.class);
+
+
+        RequestEntity<ProductMovementRequestDto> requestEntity
+                = RequestEntity.post(URI.create(resourceUrlMovementProducts)).
+                contentType(MediaType.APPLICATION_JSON).body(productMovementRequestDto);
+
+        Long id = testRestTemplate.postForObject(resourceUrlMovementProducts, requestEntity, Long.class);
+        assertThat(id).isNotNull();
+
+
+    /*//    String resourceUrlMovementProducts = resourceUrl + "moveProducts/";
+       // ProductMovementRequestDto productMovementRequestDto = getFromJson(
+             //   "/product/movementProductsBetweenStocks.req.json", ProductMovementRequestDto.class);
+        ProductMovementResponseDto productMovementResponseDto
+                = getFromJson("/product/movementProductsBetweenStocks.resp.json", ProductMovementResponseDto.class);
+
+        ParameterizedTypeReference<ResponseDto<ProductMovementResponseDto>> parameterizedTypeReferenceResponse =
+                new ParameterizedTypeReference<>() {
+                };
+
+       // createAndTestProductForStockMethods(jsonFileNameReq);
+        ProductRequestDto productRequestDto = getProductRequestDto(jsonFileNameResp);
+        RequestEntity<ProductRequestDto> requestEntity =
+                RequestEntity.post(URI.create(resourceUrl)).contentType(MediaType.APPLICATION_JSON).
+                        body(productRequestDto);
+
+        Long id = testRestTemplate.postForObject(resourceUrl, requestEntity, Long.class);
+        assertThat(id).isNotNull();
+       // testGet(String.valueOf(id), getProductResponseDto(jsonFileNameResp));
+        ResponseEntity<ResponseDto<ProductResponseDto>> response
+                = testRestTemplate.exchange(resourceUrl + id, HttpMethod.GET, null, PRODUCT_RESPONSE);
+        ProductResponseDto data = response.getBody().getData();
+        assertThat(data).isNotNull();
+        assertThat(data.getName()).isEqualTo("Неизвестная хрень");
+        assertThat(data.getPrice()).isEqualTo("200");
+
+        ProductRequestDto createProductUpd = ProductRequestDto.builder()
+                .name(productRequestDto.getName())
+                .price(productRequestDto.getPrice())
+                .stockPlaceId(4)
+                .build();
+
+        RequestEntity<ProductRequestDto> requestEntityUpd
+                = RequestEntity.put(URI.create(resourceUrl + id)).contentType(MediaType.APPLICATION_JSON).
+                body(createProductUpd);
+
+        ResponseEntity<Void> responseEntity = testRestTemplate.exchange(requestEntityUpd, Void.class);
+        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+
+        ProductMovementRequestDto productMovementRequestDto = ProductMovementRequestDto.builder()
+                .productId(1)
+                .productQuantityToMove(1)
+                .stockPlaceIdFrom(1)
+                .finalStockPlaceId(2)
+                .build();
+
+
+        RequestEntity<ProductMovementRequestDto> bodyRequest = RequestEntity.post(URI.create(resourceUrl + "moveProducts/")).contentType(MediaType.APPLICATION_JSON)
+                .body(productMovementRequestDto);
+
+        Long id = testRestTemplate.postForObject(resourceUrl, bodyRequest, Long.class);
+        assertThat(id).isNotNull();
+
+        ResponseEntity<ProductMovementResponseDto> getProductResponse
+                = testRestTemplate.exchange(resourceUrl + id, HttpMethod.GET, null, ProductMovementResponseDto.class);
+        assertThat(getProductResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(getProductResponse).isNotNull();*/
+
+
+//getProductResponse.getBody().
+
+       /* RequestEntity<ProductMovementRequestDto> requestEntity
+                = RequestEntity.post(URI.create(resourceUrlMovementProducts)).contentType(MediaType.APPLICATION_JSON)
+                .body(productMovementRequestDto);
+        ResponseEntity<Void> exchange = testRestTemplate.exchange(resourceUrlMovementProducts, HttpMethod.PUT, requestEntity, Void.class);
+        //  Long id = testRestTemplate.exchange(resourceUrlMovementProducts, requestEntity, Long.class);
+       // ResponseEntity<Long> id = testRestTemplate.exchange(requestEntity, Long.class);
+       // testRestTemplate.exchange(resourceUrlMovementProducts, HttpMethod.PUT, requestEntity, Void.class);
+        assertThat(exchange.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(exchange).isNotNull();
+
+        ResponseEntity<ResponseDto<ProductMovementRequestDto>> responseEntity
+                = testRestTemplate.exchange(resourceUrlMovementProducts + productMovementResponseDto., HttpMethod.GET,
+                null, parameterizedTypeReferenceResponse);
+        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(id).isNotNull();
+        ProductMovementRequestDto data = responseEntity.getBody().getData();
+        assertThat(data.getProductId()).isEqualTo(productMovementResponseDto.getProductId());
+        assertThat(data.getFinalStockPlaceId()).isEqualTo(productMovementResponseDto.getStockplaceId());*/
+    }
+
+    @Test
+    void searchingByCityName() {
+
     }
 
     //обезличенный get-test

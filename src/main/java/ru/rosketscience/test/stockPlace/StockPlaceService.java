@@ -18,30 +18,25 @@ public class StockPlaceService {
     private final StockPlaceMapper stockPlaceMapper;
 
     StockPlaceResponseDto getById(Long id) {
-        StockPlace stockPlaceById = stockPlaceRepository.findById(id).orElseThrow(()
-                -> new ValidateException("Места с id = " + id + " не существует!"));
-        return stockPlaceMapper.fromEntity(stockPlaceById);
+        return stockPlaceMapper.fromEntity(getStockPlaceEntityById(id));
     }
 
     @Transactional
     Long add(StockPlaceRequestDto stockPlaceRequestDto) {
-        StockPlace entity = stockPlaceMapper.toEntity(stockPlaceRequestDto);
+        StockPlace stockPlaceEntity = stockPlaceMapper.toEntity(stockPlaceRequestDto);
         //лезем в репозиторий Stock'ов, чтобы достать id и добавить его в таблицу с
-        Stock stock = stockRepository.getById(stockPlaceRequestDto.getStockId()).orElseThrow(()
-                -> new ValidateException("Места с таким id не существует!"));
+        Stock stock = getStockEntityById(stockPlaceRequestDto.getStockId());
         //присваиваем stock в нашу сущность
-        entity.setStock(stock);
+        stockPlaceEntity.setStock(stock);
         StockPlace addStockPlace
-                = stockPlaceRepository.save(entity);
+                = stockPlaceRepository.save(stockPlaceEntity);
         return stockPlaceMapper.fromEntity(addStockPlace).getId();
     }
 
     @Transactional
     int addStockPlaces(ManyStockPlacesRequestDto manyStockPlacesRequestDto) {
-
         long stockId = manyStockPlacesRequestDto.getStockId();
-        Stock stock = stockRepository.getById(stockId).orElseThrow(()
-                -> new ValidateException("Склада с таким id: " + stockId + " не существует!"));
+        Stock stock = getStockEntityById(stockId);
         /* если ряд существует, будет взят номер последней полочки, если нет, то вернется 1,
         поэтому, не нужна проверка на существование ряда, тк он в любом случае запишется, если
         существует, про продолжит с максимально дальней полочки, если нет, то с 1й */
@@ -74,11 +69,23 @@ public class StockPlaceService {
 
     @Transactional
     void updateById(Long id, StockPlaceRequestDto stockPlaceRequestDto) {
-        StockPlace stockPlaceToUpdate = stockPlaceRepository.findById(id).orElseThrow(()
-                -> new ValidateException("Места с id = " + id + " не существует!"));
+        StockPlace stockPlaceToUpdate = getStockPlaceEntityById(id);
         stockPlaceToUpdate.setRow(stockPlaceRequestDto.getRow());
         stockPlaceToUpdate.setShelf(stockPlaceRequestDto.getShelf());
         stockPlaceToUpdate.setCapacity(stockPlaceRequestDto.getCapacity());
         stockPlaceRepository.save(stockPlaceToUpdate);
+    }
+
+    //метод для получения EntityById + Validate
+    private StockPlace getStockPlaceEntityById(Long id) {
+        return stockPlaceRepository.getById(id).orElseThrow(()
+                -> new ValidateException("Места с id = " + id + " не существует!"));
+    }
+
+    //метод для получения EntityById + Validate
+    private Stock getStockEntityById(long stockId) {
+        Stock stock = stockRepository.getById(stockId).orElseThrow(()
+                -> new ValidateException("Склада с таким id: " + stockId + " не существует!"));
+        return stock;
     }
 }

@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Service;
 import ru.rosketscience.test.ValidateException;
-import ru.rosketscience.test.common.ResponseDto;
 import ru.rosketscience.test.productOnStockPlace.ProductOnStockPlace;
 import ru.rosketscience.test.productOnStockPlace.ProductOnStockPlaceRepository;
 import ru.rosketscience.test.stockPlace.StockPlace;
@@ -48,9 +47,7 @@ class StockService {
         stockRepository.save(entityToUpdate.get()); //entityToUpdate.get() - как раз Entity. Сохраняем в бд*/
 
     StockResponseDto getById(Long id) {
-        Stock stockById = stockRepository.findById(id).orElseThrow(()
-                -> new ValidateException("Склада с id = " + id + " не существует!"));
-        return stockMapper.fromEntity(stockById);
+        return stockMapper.fromEntity(getStockEntityById(id));
     }
 
     //возвращаем ID после записи в репозиторий(если это нужно, если нет - void)
@@ -71,8 +68,7 @@ class StockService {
     @Transactional
     void update(Long id, StockRequestDto stockRequestDto) {
         //через orElseTrow() напрямую тащим сущность из бд, если ее нет - пробрасываем кастомную ошибку
-        Stock stockToUpdate = stockRepository.findById(id).orElseThrow(()
-                -> new ValidateException("Склада с id = " + id + " не существует!"));
+        Stock stockToUpdate = getStockEntityById(id);
         //пишем напрямую в сущность новые пришедшие данные
         stockToUpdate.setName(stockRequestDto.getName());
         stockToUpdate.setCity(stockRequestDto.getCity());
@@ -82,8 +78,7 @@ class StockService {
     //вывод максимального количества свободных мест на складе
     @Transactional
     public Long getStockCapacity(Long id) {
-        Stock stock = stockRepository.getById(id).orElseThrow(()
-                -> new ValidateException("Склада с id = " + id + " не существует!"));
+        Stock stock = getStockEntityById(id);
         Long stockPlaceId = stock.getId();
         return stockPlaceRepository.getSumStockPlaceCapacity(stockPlaceId) -
                 productOnStockPlaceRepository.getSumQuantityProductByStockId(stockPlaceId);
@@ -108,8 +103,7 @@ class StockService {
     @Transactional
     public StockFreeSpaceInMapDto getStockPlacesFreeSpace(Long stockId) {
         //проверяем склад на существование
-        stockRepository.findById(stockId).orElseThrow(()
-                -> new ValidateException("Склада с таким id: " + stockId + " не существует"));
+        getStockEntityById(stockId);
 
         Map<Long, Long> stockPlaceCapacityByStockId = new HashMap<>();
         List<StockPlace> allByStockIdList = stockPlaceRepository.findAllByStockId(stockId);
@@ -141,6 +135,7 @@ class StockService {
                 .stockPlaceIdFreeSpaceByStockId(stockPlaceFreeSpace)
                 .build();
     }
+
     //альтернативный вариант решения, не самый правильный, тк часто дергаем бд в ForEach
     //если не использовать custom query запрос
     //берем сет товаров из репозитория по ID склада -> Складское место, с помощью custom @Query запроса
@@ -194,15 +189,19 @@ class StockService {
 
     //поиск и вывод в list всех мест по ид склада
     public StockResponseDto getStockPlaceByStockId(Long id) {
-        stockRepository.findById(id).orElseThrow(()
-                -> new ValidateException("Склада с таким id: " + id + " не существует"));
+        getStockEntityById(id);
         List<StockPlace> stockPlacesByStockId = stockPlaceRepository.findStockPlacesByStockId(id);
         List<StockPlaceResponseDto> collect = stockPlacesByStockId.stream()
                 .map(stockPlace -> stockPlaceMapper.fromEntity(stockPlace))
                 .collect(Collectors.toList());
-
         return StockResponseDto.builder()
                 .stockPlaceList(collect)
                 .build();
+    }
+
+    //метод для получения EntityById + Validate
+    private Stock getStockEntityById(Long stockId) {
+        return stockRepository.getById(stockId).orElseThrow(()
+                -> new ValidateException("Склада с таким id: " + stockId + " не существует"));
     }
 }
