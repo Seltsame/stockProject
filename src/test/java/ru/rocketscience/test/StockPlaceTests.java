@@ -7,6 +7,8 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import ru.rocketscience.test.common.ResponseDto;
+import ru.rocketscience.test.stockPlace.StockPlaceListRequestDto;
+import ru.rocketscience.test.stockPlace.StockPlaceListResponseDto;
 import ru.rocketscience.test.stockPlace.StockPlaceRequestDto;
 import ru.rocketscience.test.stockPlace.StockPlaceResponseDto;
 
@@ -136,4 +138,42 @@ public class StockPlaceTests extends BaseApplicationTest {
     private StockPlaceResponseDto getStockPlaceResponseDto(String jsonFileNameResp) {
         return getFromJson(jsonFileNameResp, StockPlaceResponseDto.class);
     }
+
+    @Test
+    void addStockPlaces() {
+
+        String resourceUrlAddStockPlaces = resourceUrl + "/addStockPlaces/";
+
+        StockPlaceListRequestDto stockPlaceListRequestDto
+                = getFromJson("/stockPlace/addManyStockPlaces.req.json", StockPlaceListRequestDto.class);
+
+        RequestEntity<StockPlaceListRequestDto> requestEntity
+                = RequestEntity.post(URI.create(resourceUrlAddStockPlaces)).contentType(MediaType.APPLICATION_JSON)
+                .body(stockPlaceListRequestDto);
+
+        Long id = testRestTemplate.postForObject(resourceUrlAddStockPlaces, requestEntity, Long.class);
+
+        assertThat(id).isNotNull();
+
+        StockPlaceListResponseDto stockPlaceListResponseDto
+                = getFromJson("/stockPlace/addManyStockPlaces.resp.json", StockPlaceListResponseDto.class);
+
+        ParameterizedTypeReference<ResponseDto<StockPlaceListResponseDto>> stockPlaceListResponse
+                = new ParameterizedTypeReference<>() {
+        };
+
+        ResponseEntity<ResponseDto<StockPlaceListResponseDto>> responseEntity
+                = testRestTemplate.exchange(resourceUrl + id, HttpMethod.GET, null, stockPlaceListResponse);
+
+        StockPlaceListResponseDto data = responseEntity.getBody().getData();
+
+        assertThat(data).isNotNull();
+        assertThat(data.getFirstAddedStockPlaceNum()).isEqualTo(stockPlaceListResponseDto.getFirstAddedStockPlaceNum());
+    }
 }
+/* public static class StockDtoWrapper {
+        public StockResponseDto data;
+    }
+    //использование Wrapper
+    StockDtoWrapper wrapper = testRestTemplate.getForObject(resourceUrlId, StockDtoWrapper.class);
+    StockResponseDto data = wrapper.data; */

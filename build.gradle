@@ -36,6 +36,7 @@ dependencies {
     runtimeOnly 'org.postgresql:postgresql'
     annotationProcessor 'org.projectlombok:lombok'
     annotationProcessor 'org.mapstruct:mapstruct-processor:1.4.1.Final' //подключение mapStruct
+    //compilerArg -Amapstruct.unmappedTargetPolicy=IGNORE'
     testImplementation('org.springframework.boot:spring-boot-starter-test') {
         exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
     }
@@ -46,6 +47,8 @@ dependencies {
 
     testCompileOnly 'org.projectlombok:lombok' //подключение Lombok на тесты
     testAnnotationProcessor 'org.projectlombok:lombok' //подключение Lombok на тесты
+
+
 
 }
 

@@ -1,6 +1,6 @@
 {
   "row": "Первый",
-  "rack": 1,
+  "shelf": 1,
   "capacity": 15,
   "stockId": 2
 }

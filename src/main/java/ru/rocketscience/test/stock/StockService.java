@@ -28,10 +28,12 @@ class StockService {
         return stockMapper.fromEntity(stockById);
     }
 
+
+    //НУЖЕН ЛИ @Transactional?
     //возвращаем ID после записи в репозиторий(если это нужно, если нет - void)
     Long add(StockRequestDto stockRequestDto) {
         Stock addStock = stockRepository.save(stockMapper.toEntity(stockRequestDto));
-        return addStock.getId();
+        return stockMapper.fromEntity(addStock).getId();
     }
 
 

@@ -22,7 +22,7 @@ class ProductService {
 
     Long add(ProductRequestDto productRequestDto) {
         Product productToSave = productRepository.save(productMapper.toEntity(productRequestDto));
-        return productToSave.getId();
+        return productMapper.fromEntity(productToSave).getId();
     }
 
     @Transactional
