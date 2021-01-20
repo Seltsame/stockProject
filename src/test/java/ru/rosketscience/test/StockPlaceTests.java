@@ -23,7 +23,6 @@ public class StockPlaceTests extends BaseApplicationTest {
     StockDtoWrapper wrapper = testRestTemplate.getForObject(resourceUrlId, StockDtoWrapper.class);
     StockResponseDto data = wrapper.data; */
 
-
     public final ParameterizedTypeReference<ResponseDto<StockPlaceResponseDto>> STOCKPLACE_RESPONSE
             = new ParameterizedTypeReference<>() {
     };
@@ -48,7 +47,7 @@ public class StockPlaceTests extends BaseApplicationTest {
         ResponseEntity<ResponseDto<StockPlaceResponseDto>> responseEntity
                 = testRestTemplate.exchange(resourceUrl + id, HttpMethod.GET, null,
                 STOCKPLACE_RESPONSE);
-
+        assertThat(responseEntity.getBody()).isNotNull();
         assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(responseEntity.getBody().getError()).isEqualTo(expectedMessage);
     }
@@ -89,7 +88,6 @@ public class StockPlaceTests extends BaseApplicationTest {
         testGet(String.valueOf(id), stockPlaceResponseDtoUpd);
     }
 
-
     @Test
     void testAddManyStockPlaces() {
         String resourceUrlAddStockPlaces = resourceUrl + "/addStockPlaces/";
@@ -107,19 +105,18 @@ public class StockPlaceTests extends BaseApplicationTest {
 
         ResponseEntity<ResponseDto<StockPlaceResponseDto>> responseEntity
                 = testRestTemplate.exchange(resourceUrl + id, HttpMethod.GET, null, STOCKPLACE_RESPONSE);
-
+        assertThat(responseEntity.getBody()).isNotNull();
         StockPlaceResponseDto data = responseEntity.getBody().getData();
         assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(data).isNotNull();
         assertThat(data.getFirstAddedStockPlaceNum()).isEqualTo(stockPlaceResponseDto.getFirstAddedStockPlaceNum());
     }
 
     void testGet(String id, StockPlaceResponseDto stockPlaceResponseDto) {
         ResponseEntity<ResponseDto<StockPlaceResponseDto>> responseEntity
                 = testRestTemplate.exchange(resourceUrl + id, HttpMethod.GET, null, STOCKPLACE_RESPONSE);
+        assertThat(responseEntity.getBody()).isNotNull();
         StockPlaceResponseDto data = responseEntity.getBody().getData();
 
-        assertThat(data).isNotNull();
         assertThat(data.getRow()).isEqualTo(stockPlaceResponseDto.getRow());
         assertThat(data.getShelf()).isEqualTo(stockPlaceResponseDto.getShelf());
         assertThat(data.getCapacity()).isEqualTo(stockPlaceResponseDto.getCapacity());

@@ -9,10 +9,9 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class ProductMovementResponseDto {
+public class ProductSearchingResponseDto {
 
     long productId;
-    long stockplaceId;
     long stockId;
     long quantityProduct;
 }

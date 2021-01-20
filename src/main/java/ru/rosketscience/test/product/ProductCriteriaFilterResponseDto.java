@@ -5,14 +5,14 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@Builder
 @Data
+@Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class ProductMovementResponseDto {
+public class ProductCriteriaFilterResponseDto {
 
     long productId;
-    long stockplaceId;
+    String productName;
     long stockId;
     long quantityProduct;
 }

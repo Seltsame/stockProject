@@ -6,22 +6,29 @@ import org.springframework.stereotype.Service;
 import ru.rosketscience.test.ValidateException;
 import ru.rosketscience.test.productOnStockPlace.ProductOnStockPlace;
 import ru.rosketscience.test.productOnStockPlace.ProductOnStockPlaceRepository;
+import ru.rosketscience.test.productOnStockPlace.ProductOnStockPlaceSpecification;
 import ru.rosketscience.test.stock.Stock;
 import ru.rosketscience.test.stock.StockRepository;
 import ru.rosketscience.test.stockPlace.StockPlace;
 import ru.rosketscience.test.stockPlace.StockPlaceRepository;
 
 import javax.transaction.Transactional;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 class ProductService {
 
-    private final ProductRepository productRepository;
     private final ProductMapper productMapper;
-    private final StockPlaceRepository stockPlaceRepository;
-    private final ProductOnStockPlaceRepository productOnStockPlaceRepository;
     private final StockRepository stockRepository;
+    private final ProductRepository productRepository;
+    private final StockPlaceRepository stockPlaceRepository;
+    private final ProductSpecification productSpecification;
+    private final ProductOnStockPlaceRepository productOnStockPlaceRepository;
+    private final ProductOnStockPlaceSpecification productOnStockPlaceSpecification;
 
     ProductResponseDto getById(Long id) {
         return productMapper.fromEntity(getProductEntityById(id));
@@ -51,8 +58,7 @@ class ProductService {
     }
 
     //добавление нескольких однотипных товаров в конкретный склад - место c проверкой на вместимость
-    //добавь проверку на существование товара типа прогнать name по set/list из товаров, если нет, то предложить создать новое
-    @Transactional
+       @Transactional
     void addProductsToStockPlace(ProductPlacementDto productPlacementDto) {
         long productId = productPlacementDto.getProductId();//id товара
         Product productEntity = getProductEntityById(productId);
@@ -73,7 +79,6 @@ class ProductService {
         productOnStockPlaceRepository.save(productOnStockPlaceEntity);
     }
 
-
     //перемещение товара со складского места одного склада на складское место другого склада
     @Transactional
     ProductMovementResponseDto movementProductsBetweenStocks(ProductMovementRequestDto productMovementRequestDto) {
@@ -87,9 +92,16 @@ class ProductService {
         long capacityStockPlace = stockPlaceEntityFinal.getCapacity(); //вместимость полки куда хотим переместить
         long productQuantityToMove = productMovementRequestDto.getProductQuantityToMove(); //количество товара для перемещения
         long quantityProductOnStockPlace = productRepository.getSumQuantityProductByStockPlaceId(stockPlaceEntityFinalId);//сколько товара уже лежит
+
+        StockPlace stockPlace = getStockPlaceBuilder(stockPlaceEntityFinal, stockEntityFinal);
+        /*if (quantityProductOnStockPlace.equals(null)) {
+            ProductOnStockPlace productOnStockPlaceEntity = productOnStockPlaceRepository.getByStockPlaceId(stockPlace.getId()).orElseThrow(()
+                    -> new ValidateException("Ошибка! Неправильные данные!"));
+            productOnStockPlaceEntity.setQuantityProduct(0L);
+        }*/
         long totalProductQuantityFinal = productQuantityToMove + quantityProductOnStockPlace; //общее количество товара на полке
 
-        ProductOnStockPlace productOnStockPlaceByStockPlaceAndProduct //ProductOnStockPlace By StockPlace id+ product id
+        ProductOnStockPlace productOnStockPlaceByStockPlaceAndProduct //ProductOnStockPlace By StockPlace id + product id
                 = productOnStockPlaceRepository.getProductOnStockPlaceByStockPlaceAndProduct(stockPlaceEntity.getId(), productId);
         long sumQuantityProductByStockPlaceAndProduct //количество конкретного продукта на конкретной полке
                 = productOnStockPlaceByStockPlaceAndProduct.getQuantityProduct();
@@ -97,7 +109,7 @@ class ProductService {
             validateException(stockPlaceEntityFinalId, capacityStockPlace, productQuantityToMove, quantityProductOnStockPlace);
         }
 
-        StockPlace stockPlace = getStockPlaceBuilder(stockPlaceEntityFinal, stockEntityFinal);
+   //     StockPlace stockPlace = getStockPlaceBuilder(stockPlaceEntityFinal, stockEntityFinal);
 
         if (!(productQuantityToMove == sumQuantityProductByStockPlaceAndProduct)) { //update,если не равно к-во
             ProductOnStockPlace productOnStockPlaceEntity
@@ -106,10 +118,41 @@ class ProductService {
             productOnStockPlaceEntity.setQuantityProduct(quantityProductOnStockPlace - productQuantityToMove); //обновляем количество товара на полке
             productOnStockPlaceRepository.save(productOnStockPlaceEntity);
             stockPlaceRepository.save(stockPlace);
+            return productMovementResponseDto(productId, stockPlaceEntityFinal, stockEntityFinal);
         }
         stockPlaceRepository.save(stockPlace);
         productOnStockPlaceRepository.deleteByProductId(productId);
         return productMovementResponseDto(productId, stockPlaceEntityFinal, stockEntityFinal);
+    }
+
+    //динамический фильтр по критериям по товару
+    @Transactional
+    ProductFilterResponseDto filterProductByParam(String name, BigDecimal minPrice, BigDecimal maxPrice) {
+        List<ProductResponseDto> productListByParam = productRepository.findAll(
+                productSpecification.findByNameAndPrice(name, minPrice, maxPrice))
+                .stream()
+                .map(productMapper::fromEntity)
+                .collect(Collectors.toList());
+        return ProductFilterResponseDto.builder()
+                .productList(productListByParam)
+                .build();
+    }
+
+    //получение списка из динамического запроса
+    //если создаем отдельный mapStruct, то в target : stockId, source stock.id
+    @Transactional
+    List<ProductCriteriaFilterResponseDto> criteriaFilterByParam(String city, String product) {
+        ProductCriteriaFilterResponseDto.ProductCriteriaFilterResponseDtoBuilder builder = ProductCriteriaFilterResponseDto.builder();
+        List<ProductCriteriaFilterResponseDto> resultList = new ArrayList<>();
+        productOnStockPlaceRepository.findAll(productOnStockPlaceSpecification.findByCityProduct(city, product))
+                .forEach(productOnStockPlace -> {
+                    builder.productId(productOnStockPlace.getId());
+                    builder.productName(productOnStockPlace.getProduct().getName());
+                    builder.stockId(productOnStockPlace.getStockPlace().getId());
+                    builder.quantityProduct(productOnStockPlace.getQuantityProduct());
+                    resultList.add(builder.build());
+                });
+        return resultList;
     }
 
     //Response Dto

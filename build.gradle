@@ -18,6 +18,7 @@ compileJava {
     //Чтобы не писать @Mapper(componentModel = "spring")
     options.compilerArgs += "-Amapstruct.unmappedTargetPolicy=IGNORE" //Чтобы не писать каждый раз в Mapper
     // unmappedTargetPolicy = ReportingPolicy.IGNORE
+    options.annotationProcessorGeneratedSourcesDirectory = file("${buildDir}/generated") //использование метамодели данных
 }
 
 repositories {
@@ -26,7 +27,7 @@ repositories {
 
 ext {
     set('testcontainersVersion', "1.15.0")
- }
+}
 
 dependencies {
     compileOnly 'org.projectlombok:lombok'
@@ -41,6 +42,8 @@ dependencies {
     runtimeOnly 'org.postgresql:postgresql'
     annotationProcessor 'org.projectlombok:lombok'
     annotationProcessor 'org.mapstruct:mapstruct-processor:1.4.1.Final' //подключение mapStruct
+    annotationProcessor("javax.xml.bind:jaxb-api") //использование метамодели данных
+    annotationProcessor("org.hibernate:hibernate-jpamodelgen") //использование метамодели данных
     testImplementation('org.springframework.boot:spring-boot-starter-test') {
         exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
     }

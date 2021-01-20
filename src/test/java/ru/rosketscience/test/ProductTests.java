@@ -1,26 +1,36 @@
 package ru.rosketscience.test;
 
+import lombok.Value;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import ru.rosketscience.test.common.ResponseDto;
 import ru.rosketscience.test.product.*;
-import ru.rosketscience.test.stock.StockFreeSpaceResponseDto;
-import ru.rosketscience.test.stock.StockRequestDto;
+import ru.rosketscience.test.stock.StockFilterResponseDto;
+import ru.rosketscience.test.stock.StockResponseDto;
 
+import java.math.BigDecimal;
 import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 
+import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
+import static ru.rosketscience.test.ProductTests.TestCase.args;
+import static ru.rosketscience.test.ProductTests.TestCase.argsCriteria;
 
 public class ProductTests extends BaseApplicationTest {
 
     public static final ParameterizedTypeReference<ResponseDto<ProductResponseDto>> PRODUCT_RESPONSE =
             new ParameterizedTypeReference<>() {
             };
-
 
     //метод для простоты вызова метода getObjectFromResourceJson();
     private <T> T getFromJson(String jsonFileName, Class<T> dtoClass) {
@@ -35,10 +45,8 @@ public class ProductTests extends BaseApplicationTest {
         resourceUrl = "http://localhost:" + port + "/product/";
     }
 
-
     @Test
     void testSimpleGet() {
-
         testGet("2", getProductResponseDto(jsonFileNameResp));
     }
 
@@ -49,20 +57,19 @@ public class ProductTests extends BaseApplicationTest {
 
         //тест-метод /get с неправильным id
     void testInvalidGet(String id, String expectedMessage) {
-
         //создаем и подставляем значения в RequestDto из преобразованного json: addNewProduct.req.json
         ResponseEntity<ResponseDto<ProductResponseDto>> response
                 = testRestTemplate.exchange(resourceUrl + id, HttpMethod.GET, null,
                 PRODUCT_RESPONSE);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().getError()).isEqualTo(expectedMessage);
     }
 
     //тест метода /add
     @Test
     void testAdd() {
-
         //создаём, тестируем entity из json-файла и возвращаем id
         createAndTestProductForStockMethods(jsonFileNameReq);
     }
@@ -70,7 +77,6 @@ public class ProductTests extends BaseApplicationTest {
     //тест delete-метода
     @Test
     void testDelete() {
-
         //ЭТО ВСЁ ЛУЧШЕ ВЫНОСИТЬ В ОТДЕЛЬНЫЙ МЕТОД. См. остальные тесты. З.Ы. просто пример.
         //берем данные из json и пишем в RequestDTO
         ProductRequestDto getFromJson
@@ -119,18 +125,17 @@ public class ProductTests extends BaseApplicationTest {
     void testAddProductsToStockPlace() {
         String resourceUrlForStock = "http://localhost:" + port + "/stock/maxCapacityInStock/";
         String resourceUrlAddProducts = resourceUrl + "addProducts/";
-        StockFreeSpaceResponseDto stockResponseDtoAfter = getFromJson(
-                "/product/getMaxCapacityInStockAfterAddingProducts.resp.json", StockFreeSpaceResponseDto.class);
+        long stockId = 2L;
+        long stockFreeSpace = 249L;
         ProductPlacementDto productPlacementDto
                 = getFromJson("/product/addManyNewProducts.req.json", ProductPlacementDto.class);
-        StockRequestDto stockRequestDto
-                = getFromJson("/stock/getMaxCapacityInStock.req.json", StockRequestDto.class);
+
         ParameterizedTypeReference<ResponseDto<Long>> parameterizedTypeReferenceResponse =
                 new ParameterizedTypeReference<>() {
                 };
 
         ResponseEntity<ResponseDto<Long>> responseEntityBeforeAddingProduct
-                = testRestTemplate.exchange(resourceUrlForStock + stockRequestDto.getStockId(),
+                = testRestTemplate.exchange(resourceUrlForStock + stockId,
                 HttpMethod.GET, null, parameterizedTypeReferenceResponse);
         assertThat(responseEntityBeforeAddingProduct.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(responseEntityBeforeAddingProduct.getBody()).isNotNull();
@@ -143,122 +148,186 @@ public class ProductTests extends BaseApplicationTest {
         assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
 
         ResponseEntity<ResponseDto<Long>> responseEntityAfterAddingProduct
-                = testRestTemplate.exchange(resourceUrlForStock + stockRequestDto.getStockId(),
+                = testRestTemplate.exchange(resourceUrlForStock + stockId,
                 HttpMethod.GET, null, parameterizedTypeReferenceResponse);
         ResponseDto<Long> responseEntityAfter = responseEntityAfterAddingProduct.getBody();
         assertThat(responseEntityAfterAddingProduct.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(responseEntityAfter).isNotNull();
-        assertThat(responseEntityAfter.getData()).isEqualTo(stockResponseDtoAfter.getStockFreeSpace());
+        assertThat(responseEntityAfter.getData()).isEqualTo(stockFreeSpace);
     }
 
+    //фильтр по названию товара
+    @ParameterizedTest
+    @MethodSource("generateCases")
+    void searchProductByName(TestCase<ProductResponseDto> args) {
+
+        String resourceUrlFilter = resourceUrl + "filterProduct";
+
+        ParameterizedTypeReference<ResponseDto<ProductFilterResponseDto>> parameterizedResponse
+                = new ParameterizedTypeReference<>() {
+        };
+
+        ResponseEntity<ResponseDto<ProductFilterResponseDto>> responseEntity
+                = testRestTemplate.exchange(
+                resourceUrlFilter + "?" + args.searchString,
+                HttpMethod.GET,
+                null,
+                parameterizedResponse);
+
+        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(responseEntity.getBody()).isNotNull();
+
+        List<ProductResponseDto> productFilterList = responseEntity.getBody().getData().getProductList();
+        long count = productFilterList.stream()
+                .filter(pl -> pl.getName().startsWith("searching")).count();
+
+        assertThat(count).isEqualTo(args.expectedSize);
+        productFilterList.forEach(args.verifier);
+    }
+
+    //вывод списка id товаров, id принадлежащего склада, их остатка на складах по имени города и имени товара
+    //values ('searching_Московский', 'searching_Москва_city'),
+    //       ('searching_Спб склад', 'searching_Санкт-Марино_city'),
+    //       ('searching_Адмиралтейский склад', 'searching_Санкт-Петербург_city');
+    //
+    //INSERT INTO product(name, price)
+    //values ('searching_носки', 500),
+    //       ('searching_неизвестная хрень', 600),
+    //       ('searching_безумно неизвестная хрень', 700),
+    //       ('searching_шоколадка', 800);
+    @ParameterizedTest
+    @MethodSource("casesFoCriteria")
+    void searchingByCityAndProduct(TestCase<ProductCriteriaFilterResponseDto> args) {
+        String productFilterUrl = resourceUrl + "filterCriteria";
+
+        ParameterizedTypeReference<ResponseDto<List<ProductCriteriaFilterResponseDto>>> parameterizedResponse
+                = new ParameterizedTypeReference<>() {
+        };
+        ResponseEntity<ResponseDto<List<ProductCriteriaFilterResponseDto>>> responseEntity
+                = testRestTemplate.exchange(productFilterUrl + "?" + args.searchString,
+                HttpMethod.GET,
+                null,
+                parameterizedResponse);
+        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(responseEntity.getBody()).isNotNull();
+
+        List<ProductCriteriaFilterResponseDto> dataList = responseEntity.getBody().getData();
+        long count = dataList.stream()
+                .filter(pl -> pl.getProductName().startsWith("searching")).count();
+
+        assertThat(count).isEqualTo(args.getExpectedSize());
+        dataList.forEach(args.getVerifier());
+    }
+
+
+ /*   void filterTestTemplate(TestCase arg) {
+        String resourceUrlFilter = resourceUrl + "searchStock";
+        ParameterizedTypeReference<ResponseDto<StockFilterResponseDto>> stockResponse =
+                new ParameterizedTypeReference<>() {
+                };
+
+        ResponseEntity<ResponseDto<StockFilterResponseDto>> responseEntityDto
+                = testRestTemplate.exchange(
+                //URLEncoder.encode кодируем рус к стандартной UTF-8 для поисковой строки
+                resourceUrlFilter + "?" + arg.searchString,
+                HttpMethod.GET,
+                null,
+                stockResponse);
+        assertThat(responseEntityDto.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(responseEntityDto.getBody()).isNotNull(); //responseEntity всегда не null, проверяем body!
+
+        List<StockResponseDto> stockList = responseEntityDto.getBody().getData().getStockList();
+
+        long count = stockList.stream()
+                .filter(sl -> sl.getName().startsWith("searching"))
+                .count();
+        assertThat(count).isEqualTo(arg.expectedSize);
+        stockList.forEach(arg.verifier);*/
+
+    /*INSERT INTO product(name, price)
+values ('searching_носки', 500),
+       ('searching_неизвестная хрень', 600),
+       ('searching_безумно неизвестная хрень', 700),
+       ('searching_шоколадка', 800);
+*/
+
+    //поиск по названию в диапазоне цен
+    //Выдаёт неправильные данные, при макс диапазоне.
+    @Test
+    void searchProductByNameAndPrice() {
+        String productFilterUrl = resourceUrl + "filterProduct";
+
+        ParameterizedTypeReference<ResponseDto<ProductFilterResponseDto>> responseDtoParameterized
+                = new ParameterizedTypeReference<>() {
+        };
+
+        ResponseEntity<ResponseDto<ProductFilterResponseDto>> responseEntity
+                = testRestTemplate.exchange(productFilterUrl + "?name=неизв&minPrice=510&maxPrice=770",
+                HttpMethod.GET,
+                null,
+                responseDtoParameterized);
+        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(responseEntity.getBody()).isNotNull();
+
+        List<ProductResponseDto> productFilteredList = responseEntity.getBody().getData().getProductList();
+        //см тут
+        long count = productFilteredList.stream()
+                .filter(pr ->
+                        pr.getName().startsWith("searching"))
+                .count();
+        assertThat(count).isEqualTo(3);
+
+        productFilteredList.forEach(pr -> {
+            assertThat(pr.getName()).contains("неизв");
+            assertThat(pr.getPrice()).isGreaterThan(BigDecimal.valueOf(510));
+            assertThat(pr.getPrice()).isLessThan(BigDecimal.valueOf(770));
+        });
+    }
+
+    //перемещение товаров между складами
     @Test
     void movementProductsBetweenStocks() {
+        String resourceUrlForStock = "http://localhost:" + port + "/stock/maxCapacityInStock/";
+        long stockId = 6L;
+        long stockFreeSpace = 502L;
 
         String resourceUrlMovementProducts = resourceUrl + "moveProducts/";
         ProductMovementRequestDto productMovementRequestDto
                 = getFromJson("/product/movementProductsBetweenStocks.req.json", ProductMovementRequestDto.class);
 
-        ProductMovementResponseDto productMovementResponseDto
+        ProductMovementResponseDto productMovementResponseDtoJson
                 = getFromJson("/product/movementProductsBetweenStocks.resp.json", ProductMovementResponseDto.class);
 
-        ResponseEntity<ProductMovementResponseDto> responseFromOldStock
-                = testRestTemplate.exchange(resourceUrlMovementProducts + productMovementRequestDto.getProductId(), HttpMethod.GET,
-                null, ProductMovementResponseDto.class);
-
-
+        ParameterizedTypeReference<ResponseDto<ProductMovementResponseDto>> parameterizedProductResponse
+                = new ParameterizedTypeReference<>() {
+        };
+        ParameterizedTypeReference<ResponseDto<Long>> parameterizedResponseAfterMoving =
+                new ParameterizedTypeReference<>() {
+                };
         RequestEntity<ProductMovementRequestDto> requestEntity
                 = RequestEntity.post(URI.create(resourceUrlMovementProducts)).
                 contentType(MediaType.APPLICATION_JSON).body(productMovementRequestDto);
 
-        Long id = testRestTemplate.postForObject(resourceUrlMovementProducts, requestEntity, Long.class);
-        assertThat(id).isNotNull();
-
-
-    /*//    String resourceUrlMovementProducts = resourceUrl + "moveProducts/";
-       // ProductMovementRequestDto productMovementRequestDto = getFromJson(
-             //   "/product/movementProductsBetweenStocks.req.json", ProductMovementRequestDto.class);
-        ProductMovementResponseDto productMovementResponseDto
-                = getFromJson("/product/movementProductsBetweenStocks.resp.json", ProductMovementResponseDto.class);
-
-        ParameterizedTypeReference<ResponseDto<ProductMovementResponseDto>> parameterizedTypeReferenceResponse =
-                new ParameterizedTypeReference<>() {
-                };
-
-       // createAndTestProductForStockMethods(jsonFileNameReq);
-        ProductRequestDto productRequestDto = getProductRequestDto(jsonFileNameResp);
-        RequestEntity<ProductRequestDto> requestEntity =
-                RequestEntity.post(URI.create(resourceUrl)).contentType(MediaType.APPLICATION_JSON).
-                        body(productRequestDto);
-
-        Long id = testRestTemplate.postForObject(resourceUrl, requestEntity, Long.class);
-        assertThat(id).isNotNull();
-       // testGet(String.valueOf(id), getProductResponseDto(jsonFileNameResp));
-        ResponseEntity<ResponseDto<ProductResponseDto>> response
-                = testRestTemplate.exchange(resourceUrl + id, HttpMethod.GET, null, PRODUCT_RESPONSE);
-        ProductResponseDto data = response.getBody().getData();
-        assertThat(data).isNotNull();
-        assertThat(data.getName()).isEqualTo("Неизвестная хрень");
-        assertThat(data.getPrice()).isEqualTo("200");
-
-        ProductRequestDto createProductUpd = ProductRequestDto.builder()
-                .name(productRequestDto.getName())
-                .price(productRequestDto.getPrice())
-                .stockPlaceId(4)
-                .build();
-
-        RequestEntity<ProductRequestDto> requestEntityUpd
-                = RequestEntity.put(URI.create(resourceUrl + id)).contentType(MediaType.APPLICATION_JSON).
-                body(createProductUpd);
-
-        ResponseEntity<Void> responseEntity = testRestTemplate.exchange(requestEntityUpd, Void.class);
+        ResponseEntity<ResponseDto<ProductMovementResponseDto>> responseEntity
+                = testRestTemplate.exchange(requestEntity, parameterizedProductResponse);
         assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(responseEntity.getBody()).isNotNull();
 
+        ProductMovementResponseDto data = responseEntity.getBody().getData();
+        assertThat(data.getProductId()).isEqualTo(productMovementResponseDtoJson.getProductId());
+        assertThat(data.getStockplaceId()).isEqualTo(productMovementResponseDtoJson.getStockplaceId());
+        assertThat(data.getStockId()).isEqualTo(productMovementResponseDtoJson.getStockId());
 
-        ProductMovementRequestDto productMovementRequestDto = ProductMovementRequestDto.builder()
-                .productId(1)
-                .productQuantityToMove(1)
-                .stockPlaceIdFrom(1)
-                .finalStockPlaceId(2)
-                .build();
+        ResponseEntity<ResponseDto<Long>> responseEntityAfterMovingProducts
+                = testRestTemplate.exchange(resourceUrlForStock + stockId,
+                HttpMethod.GET, null, parameterizedResponseAfterMoving);
+        assertThat(responseEntityAfterMovingProducts.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(responseEntityAfterMovingProducts).isNotNull();
 
-
-        RequestEntity<ProductMovementRequestDto> bodyRequest = RequestEntity.post(URI.create(resourceUrl + "moveProducts/")).contentType(MediaType.APPLICATION_JSON)
-                .body(productMovementRequestDto);
-
-        Long id = testRestTemplate.postForObject(resourceUrl, bodyRequest, Long.class);
-        assertThat(id).isNotNull();
-
-        ResponseEntity<ProductMovementResponseDto> getProductResponse
-                = testRestTemplate.exchange(resourceUrl + id, HttpMethod.GET, null, ProductMovementResponseDto.class);
-        assertThat(getProductResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(getProductResponse).isNotNull();*/
-
-
-//getProductResponse.getBody().
-
-       /* RequestEntity<ProductMovementRequestDto> requestEntity
-                = RequestEntity.post(URI.create(resourceUrlMovementProducts)).contentType(MediaType.APPLICATION_JSON)
-                .body(productMovementRequestDto);
-        ResponseEntity<Void> exchange = testRestTemplate.exchange(resourceUrlMovementProducts, HttpMethod.PUT, requestEntity, Void.class);
-        //  Long id = testRestTemplate.exchange(resourceUrlMovementProducts, requestEntity, Long.class);
-       // ResponseEntity<Long> id = testRestTemplate.exchange(requestEntity, Long.class);
-       // testRestTemplate.exchange(resourceUrlMovementProducts, HttpMethod.PUT, requestEntity, Void.class);
-        assertThat(exchange.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(exchange).isNotNull();
-
-        ResponseEntity<ResponseDto<ProductMovementRequestDto>> responseEntity
-                = testRestTemplate.exchange(resourceUrlMovementProducts + productMovementResponseDto., HttpMethod.GET,
-                null, parameterizedTypeReferenceResponse);
-        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(id).isNotNull();
-        ProductMovementRequestDto data = responseEntity.getBody().getData();
-        assertThat(data.getProductId()).isEqualTo(productMovementResponseDto.getProductId());
-        assertThat(data.getFinalStockPlaceId()).isEqualTo(productMovementResponseDto.getStockplaceId());*/
-    }
-
-    @Test
-    void searchingByCityName() {
-
+        assertThat(responseEntityAfterMovingProducts.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(responseEntityAfterMovingProducts.getBody()).isNotNull();
+        assertThat(responseEntityAfterMovingProducts.getBody().getData())
+                .isEqualTo(stockFreeSpace);
     }
 
     //обезличенный get-test
@@ -266,8 +335,10 @@ public class ProductTests extends BaseApplicationTest {
 
         ResponseEntity<ResponseDto<ProductResponseDto>> response
                 = testRestTemplate.exchange(resourceUrl + id, HttpMethod.GET, null, PRODUCT_RESPONSE);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
         ProductResponseDto data = response.getBody().getData();
-        assertThat(data).isNotNull();
+
         assertThat(data.getName()).isEqualTo(productResponseDto.getName());
         assertThat(data.getPrice()).isEqualTo(productResponseDto.getPrice());
     }
@@ -309,4 +380,40 @@ public class ProductTests extends BaseApplicationTest {
     private ProductResponseDto getProductResponseDto(String jsonFileNameResp) {
         return getFromJson(jsonFileNameResp, ProductResponseDto.class);
     }
+
+    private String getEncoded(String string) {
+        return URLEncoder.encode(string, StandardCharsets.UTF_8);
+    }
+
+    @Value
+    static class TestCase<T> {
+        String searchString;
+        Consumer<T> verifier;
+        long expectedSize;
+
+        static TestCase<ProductResponseDto> args(String searchString, Consumer<ProductResponseDto> verifier, long expectedSize) {
+            return new TestCase<>(searchString, verifier, expectedSize);
+        }
+
+        static TestCase<ProductCriteriaFilterResponseDto> argsCriteria(
+                String searchString, Consumer<ProductCriteriaFilterResponseDto> verifier, long expectedSize) {
+            return new TestCase<>(searchString, verifier, expectedSize);
+        }
+    }
+//создать имя+минцена+максцена в аргс
+    private static Stream<TestCase<ProductResponseDto>> generateCases() {
+        return Stream.of(
+                args("name=неизв", pr -> assertThat(pr.getName()).contains("неизв"), 2L),
+                args("minPrice=510", pr -> assertThat(pr.getPrice()).isGreaterThan(BigDecimal.valueOf(510)), 3L),
+                args("maxPrice=590", pr -> assertThat(pr.getPrice()).isLessThan(BigDecimal.valueOf(590)), 1L)
+        );
+    }
+
+    private static Stream<TestCase<ProductCriteriaFilterResponseDto>> casesFoCriteria() {
+        return Stream.of(
+                argsCriteria("product=рен", pr -> assertThat(pr.getProductName()).contains("рен"), 2L),
+                argsCriteria("city=оскв", pr -> assertThat(pr.getProductName()).contains("оскв"), 2L)
+        );
+    }
+
 }

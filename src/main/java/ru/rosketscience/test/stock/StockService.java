@@ -26,6 +26,7 @@ class StockService {
     private final ProductOnStockPlaceRepository productOnStockPlaceRepository;
     private final StockMapper stockMapper;
     private final StockPlaceMapper stockPlaceMapper;
+    private final StockSpecification stockSpecification;
 
 
      /* Также getById() можно через Optional Лезем в репозиторий, чтобы достать сущность:
@@ -73,6 +74,7 @@ class StockService {
         stockToUpdate.setName(stockRequestDto.getName());
         stockToUpdate.setCity(stockRequestDto.getCity());
         stockRepository.save(stockToUpdate); //
+
     }
 
     //вывод максимального количества свободных мест на складе
@@ -98,8 +100,46 @@ class StockService {
                 .stockList(stockNameList)
                 .build();
     }
+/*    @Transactional
+    List<String> getStockListByCityName(String cityName) {
+        if (cityName.isEmpty()) {
+            throw new ValidateException("Нельзя выбрать пустой город!");
+        }
+        return stockRepository.findAllByCityOrderByName(cityName).stream()
+                .map(stockMapper::fromEntity) //stock -> stockMapper.fromEntity(stock)
+                .map(StockResponseDto::getName)
+                .collect(Collectors.toList());
+    }*/
+
+    //динамический фильтр по критериям
+   /* @Transactional
+    StockFilterResponseDto filterStockByParam(StockFilterDto stockFilterDto) {
+        List<StockResponseDto> stockListByParam
+                = stockRepository.findAll(stockSpecification.findByNameAndCity(stockFilterDto.getNamePart(), stockFilterDto.getCityPart()))
+                .stream()
+                .map(stockMapper::fromEntity)
+                .collect(Collectors.toList());
+        return StockFilterResponseDto.builder()
+                .stockList(stockListByParam)
+                .build();
+    } */
+    //поиск по склада по имени города и/или склада
+    @Transactional
+    StockFilterResponseDto filterStockByParam(String name, String city) {
+        List<StockResponseDto> stockListByParam
+                = stockRepository.findAll(stockSpecification.findByNameAndCity(name,city))
+                .stream()
+                .map(stockMapper::fromEntity)
+                .collect(Collectors.toList());
+        return StockFilterResponseDto.builder()
+                .stockList(stockListByParam)
+                .build();
+    }
 
     //вывод полка - свободное место
+    //поиск мест по ид склада вывод в map х : у
+    //добавить порядковый номер полочки с выводом в вывод
+    // добавить ряд полочки
     @Transactional
     public StockFreeSpaceInMapDto getStockPlacesFreeSpace(Long stockId) {
         //проверяем склад на существование

@@ -27,10 +27,10 @@ public class ProductOnStockPlace {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @EqualsAndHashCode.Include //помеченное поле для переопределение методов
-            Long id;
+    Long id;
 
     @Column
-    Long quantityProduct;
+    long quantityProduct;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "stock_place_id", foreignKey = @ForeignKey(name = "stock_place_on_stock_place_to_stock_place"))
