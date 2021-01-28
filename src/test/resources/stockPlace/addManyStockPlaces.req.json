@@ -1,7 +1,7 @@
 {
   "row": "Первый_тестовый",
-  "capacity": 10,
-  "stockPlaceQuantity": 5,
+  "capacity": 5,
+  "stockPlaceQuantity": 6,
   "stockId": 2
 }
 
