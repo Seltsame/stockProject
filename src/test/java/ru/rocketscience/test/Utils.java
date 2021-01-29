@@ -19,7 +19,6 @@ public class Utils {
         <?> - любые параметры */
 
     public static <T> T getObjectFromResourceJsonObjMap(ObjectMapper objectMapper, Class<?> testClass, String jsonFileName, Class<T> objectClass) {
-
         //ObjectMapper класс-конвертер -> см.BaseApplicationTest.class
         //getResourceAsStream() - метод, который берёт JSON-файл и конвертирует в InputStream
         try (InputStream resourceAsStream = testClass.getResourceAsStream(jsonFileName)) {

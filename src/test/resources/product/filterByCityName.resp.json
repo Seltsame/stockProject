@@ -1,0 +1,14 @@
+{
+  "filterListDto": [
+    {
+      "productId": 6,
+      "stockId": 6,
+      "quantity": 34
+    },
+    {
+      "productId": 6,
+      "stockId": 7,
+      "quantity": 18
+    }
+  ]
+}

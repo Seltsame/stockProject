@@ -1,4 +1,4 @@
-package ru.rocketscience.test;
+package ru.rosketscience.test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,10 +46,7 @@ public class BaseApplicationTest {
     @LocalServerPort
     protected int port;
 
-    // public static String resourceUrl;
-    public static String productUrl;
-    public static String stockUrl;
-    public static String stockPlaceUrl;
+
     public static String resourceUrl;
 
     @BeforeEach

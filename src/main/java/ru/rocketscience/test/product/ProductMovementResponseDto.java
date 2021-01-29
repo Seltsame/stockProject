@@ -1,0 +1,18 @@
+package ru.rosketscience.test.product;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Builder
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+public class ProductMovementResponseDto {
+
+    long productId;
+    long stockplaceId;
+    long stockId;
+    long quantityProduct;
+}

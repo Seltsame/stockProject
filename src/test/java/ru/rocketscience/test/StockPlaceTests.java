@@ -24,7 +24,6 @@ public class StockPlaceTests extends BaseApplicationTest {
     StockDtoWrapper wrapper = testRestTemplate.getForObject(resourceUrlId, StockDtoWrapper.class);
     StockResponseDto data = wrapper.data; */
 
-
     public final ParameterizedTypeReference<ResponseDto<StockPlaceResponseDto>> STOCKPLACE_RESPONSE
             = new ParameterizedTypeReference<>() {
     };
@@ -56,7 +55,7 @@ public class StockPlaceTests extends BaseApplicationTest {
         ResponseEntity<ResponseDto<StockPlaceResponseDto>> responseEntity
                 = testRestTemplate.exchange(stockUrl + id, HttpMethod.GET, null,
                 STOCKPLACE_RESPONSE);
-
+        assertThat(responseEntity.getBody()).isNotNull();
         assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(responseEntity.getBody().getError()).isEqualTo(expectedMessage);
     }
