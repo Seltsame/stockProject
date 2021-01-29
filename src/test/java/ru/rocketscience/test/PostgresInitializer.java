@@ -1,4 +1,4 @@
-package ru.rocketscience.test;
+package ru.rosketscience.test;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.event.ApplicationFailedEvent;
@@ -28,8 +28,8 @@ public class PostgresInitializer implements ApplicationContextInitializer<Config
 
             applicationContext.addApplicationListener(event -> {
                 if (event instanceof ApplicationFailedEvent
-                        || event instanceof ContextClosedEvent
-                        || event instanceof ContextStoppedEvent)
+                    || event instanceof ContextClosedEvent
+                    || event instanceof ContextStoppedEvent)
                 {
                     log.debug("PostgreSQL in Docker is being stopped " + POSTGRES_IMAGE);
                     postgreSQLContainer.close();
