@@ -7,7 +7,7 @@ INSERT INTO product(name, price)
 values ('searching_носки', 500),
        ('searching_неизвестная хрень', 600),
        ('searching_безумно неизвестная хрень', 700),
-       ('searching_шоколадка', 800);
+       ('searching_баунти', 610);
 
 INSERT INTO stock_place (row, shelf, capacity, stock_id)
 values ('searching_Третий', 1, 150, 5), /* stock_id = 5, sp_id = 5*/

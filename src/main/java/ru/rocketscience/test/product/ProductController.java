@@ -2,8 +2,6 @@ package ru.rocketscience.test.product;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -13,9 +11,9 @@ import ru.rocketscience.test.common.ResponseDto;
 import java.math.BigDecimal;
 import java.util.List;
 
+@Slf4j //включаем логировнаие
 @RestController
 @RequestMapping(path = "product")
-@Slf4j //включаем логировнаие
 @RequiredArgsConstructor
 public class ProductController {
 
@@ -65,12 +63,11 @@ public class ProductController {
 
     //сложный поиск по названию города и товара
     @GetMapping("filterCriteria")
-    ResponseDto<List<ProductCriteriaFilterResponseDto>> findByCriteria(
+    ResponseDto<List<FilterResultDto>> findByCriteria(
             @RequestParam(name = "city", required = false) String city,
             @RequestParam(name = "product", required = false) String product) {
         log.debug("findByCriteria: starts with city: {}, and product: {}", city, product);
-        List<ProductCriteriaFilterResponseDto> result
-                = productService.criteriaFilterByParam(city, product);
+        List<FilterResultDto> result = productService.resultCriteriaFilter(city, product);
         log.info("findByCriteria: starts with result: {}", result);
         return new ResponseDto<>(null, result);
     }
@@ -90,7 +87,8 @@ public class ProductController {
     }
 
     @PostMapping("moveProducts")
-    ResponseDto<ProductMovementResponseDto> moveProductsBetweenStocks(@RequestBody ProductMovementRequestDto productMovementRequestDto) {
+    ResponseDto<ProductMovementResponseDto> moveProductsBetweenStocks(
+            @RequestBody ProductMovementRequestDto productMovementRequestDto) {
         log.debug("moveProductsBetweenStocks: started with data: {}", productMovementRequestDto);
         ProductMovementResponseDto result = productService.movementProductsBetweenStocks(productMovementRequestDto);
         log.info("moveProductsBetweenStocks: finished with data: {}", productMovementRequestDto);

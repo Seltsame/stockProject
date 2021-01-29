@@ -1,4 +1,4 @@
-package ru.rosketscience.test.stock;
+package ru.rocketscience.test.stock;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,5 +13,5 @@ import java.util.List;
 @NoArgsConstructor
 public class StockFilterResponseDto {
 
- public List<StockResponseDto> stockList;
+    public List<StockResponseDto> stockList;
 }

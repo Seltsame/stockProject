@@ -7,6 +7,7 @@ plugins {
 group = 'ru.rocketscience'
 version = '0.0.1-SNAPSHOT'
 sourceCompatibility = '11'
+sourceSets.main.java.srcDirs += "${buildDir}/generated" //test metamodel
 
 configurations {
     compileOnly {
@@ -19,10 +20,14 @@ compileJava {
     options.compilerArgs += "-Amapstruct.unmappedTargetPolicy=IGNORE" //Чтобы не писать каждый раз в Mapper
     // unmappedTargetPolicy = ReportingPolicy.IGNORE
     options.annotationProcessorGeneratedSourcesDirectory = file("${buildDir}/generated") //использование метамодели данных
+
 }
 
 repositories {
     mavenCentral()
+    maven {
+        url "https://plugins.gradle.org/m2/" //metamodel
+    }
 }
 
 ext {
@@ -39,11 +44,12 @@ dependencies {
     implementation 'io.springfox:springfox-swagger2:2.7.0' //подключение Swagger
     implementation 'io.springfox:springfox-swagger-ui:2.7.0' //подключение Swagger
     compile 'commons-io:commons-io:2.8.0' //вызов IOUtils.toString в Util классе
+    compile 'org.hibernate:hibernate-jpamodelgen:5.4.27.Final' //metamodel
     runtimeOnly 'org.postgresql:postgresql'
     annotationProcessor 'org.projectlombok:lombok'
     annotationProcessor 'org.mapstruct:mapstruct-processor:1.4.1.Final' //подключение mapStruct
-    annotationProcessor("javax.xml.bind:jaxb-api") //использование метамодели данных
-    annotationProcessor("org.hibernate:hibernate-jpamodelgen") //использование метамодели данных
+    annotationProcessor'javax.xml.bind:jaxb-api' //использование метамодели данных
+    annotationProcessor'org.hibernate:hibernate-jpamodelgen' //использование метамодели данных
     testImplementation('org.springframework.boot:spring-boot-starter-test') {
         exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
     }
@@ -51,7 +57,6 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-test' //утилиты spring для тестирования
     testImplementation 'org.testcontainers:postgresql' //подключение тестконтейнеров Docker к бд
     testImplementation 'org.testcontainers:junit-jupiter' //подключение тестконтейнеров Docker к бд
-
     testCompileOnly 'org.projectlombok:lombok' //подключение Lombok на тесты
     testAnnotationProcessor 'org.projectlombok:lombok' //подключение Lombok на тесты
 

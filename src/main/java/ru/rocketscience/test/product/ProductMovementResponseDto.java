@@ -1,14 +1,10 @@
-package ru.rosketscience.test.product;
+package ru.rocketscience.test.product;
 
-import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.Value;
 
+@Value
 @Builder
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
 public class ProductMovementResponseDto {
 
     long productId;

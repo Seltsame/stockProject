@@ -72,9 +72,9 @@ public class StockPlaceService {
 
     @Transactional
     void update(Long id, StockPlaceRequestDto stockPlaceRequestDto) {
-        StockPlace stockPlaceToUpdate = stockPlaceRepository.findById(id).orElseThrow(()
-                -> new ValidateException("Места с id = " + id + " не существует!"));
-    void updateById(Long id, StockPlaceRequestDto stockPlaceRequestDto) {
+      /*  StockPlace stockPlaceToUpdate = stockPlaceRepository.findById(id).orElseThrow(()
+                -> new ValidateException("Места с id = " + id + " не существует!"));*/
+        //  void updateById (Long id, StockPlaceRequestDto stockPlaceRequestDto){
         StockPlace stockPlaceToUpdate = getStockPlaceEntityById(id);
         stockPlaceToUpdate.setRow(stockPlaceRequestDto.getRow());
         stockPlaceToUpdate.setShelf(stockPlaceRequestDto.getShelf());
@@ -82,16 +82,15 @@ public class StockPlaceService {
         stockPlaceRepository.save(stockPlaceToUpdate);
     }
 
-    //метод для получения EntityById + Validate
+    //метод для получения StockPlace EntityById + Validate
     private StockPlace getStockPlaceEntityById(Long id) {
         return stockPlaceRepository.getById(id).orElseThrow(()
                 -> new ValidateException("Места с id = " + id + " не существует!"));
     }
 
-    //метод для получения EntityById + Validate
-    private Stock getStockEntityById(long stockId) {
-        Stock stock = stockRepository.getById(stockId).orElseThrow(()
+    //метод для получения Stock EntityById + Validate
+    private Stock getStockEntityById(Long stockId) {
+        return stockRepository.getById(stockId).orElseThrow(()
                 -> new ValidateException("Склада с таким id: " + stockId + " не существует!"));
-        return stock;
     }
 }

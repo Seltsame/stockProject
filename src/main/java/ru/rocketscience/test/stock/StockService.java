@@ -12,9 +12,12 @@ import ru.rocketscience.test.stockPlace.StockPlaceRepository;
 import ru.rocketscience.test.stockPlace.StockPlaceResponseDto;
 
 import javax.transaction.Transactional;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.function.BiConsumer;
+import java.util.function.BinaryOperator;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 @Service
@@ -24,11 +27,9 @@ class StockService {
     private final StockMapper stockMapper;
     private final StockRepository stockRepository;
     private final StockPlaceMapper stockPlaceMapper;
+    private final StockSpecification stockSpecification;
     private final StockPlaceRepository stockPlaceRepository;
     private final ProductOnStockPlaceRepository productOnStockPlaceRepository;
-    private final StockMapper stockMapper;
-    private final StockPlaceMapper stockPlaceMapper;
-
 
     /* Также getById() можно через Optional Лезем в репозиторий, чтобы достать сущность:
        Optional<Stock> entityToGet = stockRepository.findById(id);
@@ -111,23 +112,11 @@ class StockService {
                 .collect(Collectors.toList());
     }*/
 
-    //динамический фильтр по критериям
-   /* @Transactional
-    StockFilterResponseDto filterStockByParam(StockFilterDto stockFilterDto) {
-        List<StockResponseDto> stockListByParam
-                = stockRepository.findAll(stockSpecification.findByNameAndCity(stockFilterDto.getNamePart(), stockFilterDto.getCityPart()))
-                .stream()
-                .map(stockMapper::fromEntity)
-                .collect(Collectors.toList());
-        return StockFilterResponseDto.builder()
-                .stockList(stockListByParam)
-                .build();
-    } */
     //поиск по склада по имени города и/или склада
     @Transactional
     StockFilterResponseDto filterStockByParam(String name, String city) {
         List<StockResponseDto> stockListByParam
-                = stockRepository.findAll(stockSpecification.findByNameAndCity(name,city))
+                = stockRepository.findAll(stockSpecification.findByNameAndCity(name, city))
                 .stream()
                 .map(stockMapper::fromEntity)
                 .collect(Collectors.toList());
@@ -136,28 +125,25 @@ class StockService {
                 .build();
     }
 
-    //вывод полка - свободное место
+
     //поиск мест по ид склада вывод в map х : у
-    //добавить порядковый номер полочки с выводом в вывод
-    // добавить ряд полочки
-    @Transactional
-    public StockFreeSpaceInMapDto getStockPlacesFreeSpace(Long stockId) {
+  /*  @Transactional
+    public StockFreeSpaceDto getStockPlacesFreeSpace(Long stockId) {
         //проверяем склад на существование
         getStockEntityById(stockId);
 
         Map<Long, Long> stockPlaceCapacityByStockId = new HashMap<>();
-        List<StockPlace> allByStockIdList = stockPlaceRepository.findAllByStockId(stockId);
+        Set<StockPlace> allByStockIdList = stockPlaceRepository.findAllByStockId(stockId);
         allByStockIdList.forEach(stockPlace -> {
             Long id = stockPlace.getId();
             long capacity = stockPlace.getCapacity();
             stockPlaceCapacityByStockId.put(id, capacity);
         });
-        /* Как вариант - можно сразу подготовить Query-запрос с выводом в Map и работать с ним. См. Query в ProductOnStockPlaceRepository
-        с Pair of */
+        *//* Как вариант - можно сразу подготовить Query-запрос с выводом в Map и работать с ним. См. Query в ProductOnStockPlaceRepository
+        с Pair of *//*
         //= stockPlaceRepository.getStockPlaceIdAndCapacityByStockId(stockId);
-       /* Map<Long, Long> stockPlaceQuantity = productOnStockPlaceRepository.getQuantityProductOnStockPlaceByStockId(stockId)
-                .collect(Collectors.toMap(pair -> pair.getKey(), pair -> pair.getKey()));*/
-
+       *//* Map<Long, Long> stockPlaceQuantity = productOnStockPlaceRepository.getQuantityProductOnStockPlaceByStockId(stockId)
+                .collect(Collectors.toMap(pair -> pair.getKey(), pair -> pair.getKey()));*//*
         Map<Long, Long> stockPlaceQuantity
                 = productOnStockPlaceRepository.getQuantityProductOnStockPlaceByStockId(stockId)
                 .stream()
@@ -171,9 +157,49 @@ class StockService {
                 stockPlaceFreeSpace.put(entry.getKey(), resultFreeSpace);
             }
         }
-        return StockFreeSpaceInMapDto.builder()
+        return StockFreeSpaceDto.builder()
                 .stockPlaceIdFreeSpaceByStockId(stockPlaceFreeSpace)
                 .build();
+    }*/
+
+    //поиск мест по ид склада вывод в DTO: id место порядковый номер полочки и ряд полочки
+    @Transactional
+    public List<StockFreeSpaceDto> getStockPlacesFreeSpace(Long stockId) {
+        //проверяем склад на существование
+        getStockEntityById(stockId);
+        List<StockFreeSpaceDto> result = new ArrayList<>();
+        StockFreeSpaceDto.StockFreeSpaceDtoBuilder current = StockFreeSpaceDto.builder();
+        Set<ProductOnStockPlace> quantityProduct = productOnStockPlaceRepository.getProductOnStockPlaceByStockId(stockId);
+
+//берем пару из сета и сравниваем с мапой //key мап использовать пару product id + stockPlace - id/ value - quantity продукт
+        //если такой же id существет, то складываем количество товара и кладём в мапу
+        Map<Long, Long> spQuantity
+                = quantityProduct
+                .stream()
+                .collect(Collectors.toMap(pr -> pr.getStockPlace().getId(), ProductOnStockPlace::getQuantityProduct,
+                        (existing, anotherExisting) -> existing + anotherExisting)); //Long::sum
+        //При конфликте Keys в данном случае, он складывает Values
+
+
+        Set<StockPlace> allByStockIdList = stockPlaceRepository.findAllByStockId(stockId);
+        allByStockIdList.forEach(stockPlace -> {
+            current.id(stockPlace.getId());
+            current.row(stockPlace.getRow());
+            current.shelf(stockPlace.getShelf());
+            long freeSpace = 0L;
+            for (Map.Entry<Long, Long> entry : spQuantity.entrySet()) {
+                if (entry.getKey().equals(stockPlace.getId())) {
+                    if (entry.getValue() != null) {
+                        freeSpace = stockPlace.getCapacity() - entry.getValue();
+                    } else {
+                        freeSpace = stockPlace.getCapacity();
+                    }
+                    current.freeSpace(freeSpace);
+                }
+            }
+            result.add(current.build());
+        });
+        return result;
     }
 
     //альтернативный вариант решения, не самый правильный, тк часто дергаем бд в ForEach

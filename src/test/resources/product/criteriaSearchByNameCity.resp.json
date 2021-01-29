@@ -1,0 +1,24 @@
+[
+  {
+    "product": {
+      "id": 14,
+      "name": "search2_prod_3"
+    },
+    "stockDto": [
+      {
+        "id": 11,
+        "name": "search2_stock_1",
+        "quantity": 30,
+        "city": "search2_city_1",
+        "stockPlaceFilterDto": [
+          {
+            "id": 15,
+            "row": "search2_Первый",
+            "shelf": 2,
+            "quantity": 30
+          }
+        ]
+      }
+    ]
+  }
+]

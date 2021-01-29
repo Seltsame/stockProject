@@ -16,4 +16,4 @@ INSERT INTO product_on_stock_place(product_id, stock_place_id, quantity_product)
 values (10, 11, 50),
        (10, 12, 0),
        (11, 12, 0),
-       (11, 11, 0);
+       (11, 11, 1);

@@ -1,8 +1,8 @@
 package ru.rocketscience.test.productOnStockPlace;
 
 import lombok.*;
-import ru.rocketscience.test.stockPlace.StockPlace;
 import ru.rocketscience.test.product.Product;
+import ru.rocketscience.test.stockPlace.StockPlace;
 
 import javax.persistence.*;
 

@@ -1,6 +1,6 @@
 package ru.rocketscience.test.stock;
 
-import lombok.*;
+import lombok.Value;
 
 @Value
 public class StockRequestDto {

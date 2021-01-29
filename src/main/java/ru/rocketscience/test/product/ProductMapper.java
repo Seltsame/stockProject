@@ -2,7 +2,7 @@ package ru.rocketscience.test.product;
 
 import org.mapstruct.Mapper;
 
-@Mapper
+@Mapper //см. натсройки Gradle
 public interface ProductMapper {
 
     ProductResponseDto fromEntity(Product product);

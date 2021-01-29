@@ -1,6 +1,6 @@
 package ru.rocketscience.test.stockPlace;
 
-import lombok.*;
+import lombok.Value;
 import ru.rocketscience.test.stock.StockResponseDto;
 
 

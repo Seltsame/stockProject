@@ -1,14 +1,17 @@
-package ru.rosketscience.test.productOnStockPlace;
+package ru.rocketscience.test.productOnStockPlace;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.util.StringUtils;
-import ru.rosketscience.test.product.Product;
-import ru.rosketscience.test.stock.Stock;
-import ru.rosketscience.test.stockPlace.StockPlace;
+import ru.rocketscience.test.product.Product;
+import ru.rocketscience.test.stock.Stock;
+import ru.rocketscience.test.stock.Stock_;
+import ru.rocketscience.test.stockPlace.StockPlace;
 
+import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Join;
 import javax.persistence.criteria.Predicate;
+import javax.persistence.criteria.Root;
 
 @Configuration
 public class ProductOnStockPlaceSpecification {
@@ -27,22 +30,35 @@ public class ProductOnStockPlaceSpecification {
 
     // вывод списка id товаров + имени товаров, id принадлежащего склада, их остатка на складах по имени города и/или имени продукта,
     // аналог запроса см. выше. SELECT прописывается отдельно в сервисных методах
-    public Specification<ProductOnStockPlace> findByCityProduct(String city, String productN) {
+    public Specification<ProductOnStockPlace> findByCityProduct(String city, String product) {
         return Specification.where((root, query, criteriaBuilder) -> {
             Predicate result = null;
-            Join<ProductOnStockPlace, Product> productJoin = root.join("product_id");
-            Join<StockPlace, Stock> stock = productJoin
-                    .join("stock_place_id")
-                    .join("stock_id");
-            Join<ProductOnStockPlace, Product> pr = root.join(ProductOnStockPlace_.)
-                                   /*     CriteriaQuery<?> multiselect
-                        = query.multiselect(criteriaBuilder.array(product.get("id"), stock.get("id"), root.get("quantity_product")));
-criteriaBuilder.createQuery() */
+            Join<ProductOnStockPlace, Product> productJoin = root.join("product");
+            Join<StockPlace, Stock> stock = root
+                    .join("stockPlace")
+                    .join("stock");
+            if (!StringUtils.isEmpty(StringUtils.trimAllWhitespace(city))) {
+                result = criteriaBuilder.like(stock.get("city"), "%" + city + "%");
+            }
+            if (!StringUtils.isEmpty(StringUtils.trimAllWhitespace(product))) {
+                result = criteriaBuilder.like(productJoin.get("name"), "%" + product + "%");
+            }
+            return result;
+        });
+    }
+
+    public Specification<ProductOnStockPlace> findByCityProductMetaModel(String city, String productN) {
+        return Specification.where((root, query, criteriaBuilder) -> {
+            CriteriaQuery<ProductOnStockPlace> cq = criteriaBuilder.createQuery(ProductOnStockPlace.class);
+            Root<ProductOnStockPlace> rootPSP = cq.from(ProductOnStockPlace.class);
+            Join<ProductOnStockPlace, Product> prod = rootPSP.join(ProductOnStockPlace_.product);
+            Join<ProductOnStockPlace, Stock> stock = root.join(ProductOnStockPlace_.stockPlace).join(Stock_.ID);
+            Predicate result = null;
             if (!StringUtils.isEmpty(StringUtils.trimAllWhitespace(city))) {
                 result = criteriaBuilder.like(stock.get("city"), "%" + city + "%");
             }
             if (!StringUtils.isEmpty(StringUtils.trimAllWhitespace(productN))) {
-                result = criteriaBuilder.like(productJoin.get("name"), "%" + productN + "%");
+                result = criteriaBuilder.like(prod.get("name"), "%" + productN + "%");
             }
             return result;
         });

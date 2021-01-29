@@ -3,11 +3,12 @@ package ru.rocketscience.test.stock;
 import lombok.Builder;
 import lombok.Value;
 
-import java.util.List;
-
 @Value
 @Builder
-public class StockListResponseDto {
+public class StockFreeSpaceDto {
 
-    List<String> stockList;
+    Long id;
+    Long freeSpace;
+    int shelf;
+    String row;
 }

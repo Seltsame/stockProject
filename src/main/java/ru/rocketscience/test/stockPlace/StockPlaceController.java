@@ -8,9 +8,9 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import ru.rocketscience.test.ValidateException;
 import ru.rocketscience.test.common.ResponseDto;
 
+@Slf4j
 @RestController
 @RequestMapping(path = "stockplace")
-@Slf4j
 @RequiredArgsConstructor
 public class StockPlaceController {
 

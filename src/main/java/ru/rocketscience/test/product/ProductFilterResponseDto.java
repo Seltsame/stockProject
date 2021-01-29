@@ -1,17 +1,13 @@
-package ru.rosketscience.test.product;
+package ru.rocketscience.test.product;
 
-import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.Value;
 
 import java.util.List;
 
-@Data
+@Value
 @Builder
-@AllArgsConstructor
-@NoArgsConstructor
 public class ProductFilterResponseDto {
 
-   public List<ProductResponseDto> productList;
+    public List<ProductResponseDto> productList;
 }

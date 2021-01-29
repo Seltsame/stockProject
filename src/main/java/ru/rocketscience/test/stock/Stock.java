@@ -7,11 +7,12 @@ import javax.persistence.*;
 import java.util.List;
 
 @Entity
-@Data
 @Builder
+@Setter
+@Getter
 @AllArgsConstructor
 @NoArgsConstructor
-//@EqualsAndHashCode(onlyExplicitlyIncluded = true) //переопределение методов ТОЛЬКО для помеченных полей.
+@EqualsAndHashCode
 public class Stock {
     /*
      * При OneToMany, ManyToOne, ManyToMany, OneToOne , при использовании Lombok:

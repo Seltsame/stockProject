@@ -1,0 +1,47 @@
+[
+  {
+    "product": {
+      "id": 12,
+      "name": "search2_product_1"
+    },
+    "stockDto": [
+      {
+        "id": 11,
+        "name": "search2_stock_1",
+        "quantity": 10,
+        "city": "search2_city_1",
+        "stockPlaceFilterDto": [
+          {
+            "id": 14,
+            "row": "search2_Первый",
+            "shelf": 1,
+            "quantity": 10
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "product": {
+      "id": 13,
+      "name": "search2_product_2"
+    },
+    "stockDto": [
+      {
+        "id": 11,
+        "name": "search2_stock_1",
+        "quantity": 20,
+        "city": "search2_city_1",
+        "stockPlaceFilterDto": [
+          {
+            "id": 15,
+            "row": "search2_Первый",
+            "shelf": 2,
+            "quantity": 20
+          }
+        ]
+      }
+    ]
+  }
+]
+

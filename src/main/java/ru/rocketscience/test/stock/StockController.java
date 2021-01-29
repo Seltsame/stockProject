@@ -8,10 +8,11 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import ru.rocketscience.test.ValidateException;
 import ru.rocketscience.test.common.ResponseDto;
 
+import java.util.List;
 
+@Slf4j //включаем логировнаие
 @RestController
 @RequestMapping(path = "stock")
-@Slf4j //включаем логировнаие
 @RequiredArgsConstructor
 public class StockController {
    /* не надо использовать /, тк он сам ставит.
@@ -21,7 +22,7 @@ public class StockController {
 
     private final StockService stockService;
 
-    @GetMapping( "{id}")
+    @GetMapping("{id}")
         // ResponseDto<StockResponseDto> - через спец DTO (которая разделяется на err и data) пропускаем рабочую DTO
     ResponseDto<StockResponseDto> getById(@PathVariable Long id) {
         //ставим log.debug(входящие параметры лучше логировать на уровне debug):
@@ -34,7 +35,7 @@ public class StockController {
     }
 
     //максимальное количество свободных места на складе
-    @GetMapping( "maxCapacityInStock/{id}")
+    @GetMapping("maxCapacityInStock/{id}")
     ResponseDto<Long> maxStockCapacity(@PathVariable Long id) {
         log.debug("maxStockCapacity: started with id: {}", id);
         long result = stockService.getStockCapacity(id);
@@ -42,7 +43,7 @@ public class StockController {
         return new ResponseDto<>(null, result);
     }
 
-    @GetMapping( "searchStock")
+    @GetMapping("searchStock")
     ResponseDto<StockFilterResponseDto> findStockByParam(
             @RequestParam(name = "name", required = false) String name,
             @RequestParam(name = "city", required = false) String city) {
@@ -52,23 +53,16 @@ public class StockController {
         return new ResponseDto<>(null, data);
     }
 
-    @GetMapping( "stockListByCityName/{cityName}")
+    @GetMapping("stockListByCityName/{cityName}")
     ResponseDto<StockListResponseDto> getStockListByCityName(@PathVariable String cityName) {
         log.debug("getStockListByCityName: started with city name: {}", cityName);
         StockListResponseDto result = stockService.getStockListByCityName(cityName);
         log.info("getStockListByCityName: finished for city name: {}, with result: {}", cityName, result);
         return new ResponseDto<>(null, result);
     }
-  /*  @GetMapping(path = "/stockListByCityName/{cityName}")
-   ResponseDto<StockListResponseDto> getStockListByCityName(@PathVariable String cityName) {
-        log.debug("getStockListByCityName: started with city name: {}", cityName);
-        stockService.getStockListByCityName(cityName);
-        log.info("getStockListByCityName: finished for city name: {}, with result: {}", cityName, result);
-        return result;
-    }*/
 
     //вывод списка всех складских мест по id склада
-    @GetMapping( "allByStockId/{id}")
+    @GetMapping("allByStockId/{id}")
     ResponseDto<StockResponseDto> getAllByStockId(@PathVariable Long id) {
         log.debug("getAllByStockId: started with id: {}", id);
         StockResponseDto result = stockService.getStockPlaceByStockId(id);
@@ -77,11 +71,11 @@ public class StockController {
     }
 
 
-    //вывод Map id склада - свободное место
-    @GetMapping( "/stockPlacesFreeSpaceByStockId/{id}")
-    ResponseDto<StockFreeSpaceInMapDto> getStockPlacesFreeSpaceByStockId(@PathVariable Long id) {
+    //поиск мест по ид склада вывод в DTO: id место порядковый номер полочки и ряд полочки
+    @GetMapping("/stockPlacesFreeSpace/{id}")
+    ResponseDto<List<StockFreeSpaceDto>> getStockPlacesFreeSpace(@PathVariable Long id) {
         log.debug("getAllFreeSpaceByStockId: started with id: {}", id);
-        StockFreeSpaceInMapDto result = stockService.getStockPlacesFreeSpace(id);
+        List<StockFreeSpaceDto> result = stockService.getStockPlacesFreeSpace(id);
         log.info("getAllFreeSpaceByStockId: finished for id: {}, with result: {}", id, result);
         return new ResponseDto<>(null, result);
     }
@@ -94,14 +88,14 @@ public class StockController {
         return result;
     }
 
-    @DeleteMapping( "/{id}")
+    @DeleteMapping("/{id}")
     void delete(@PathVariable Long id) {
         log.debug("delete: started with: {}", id);
         stockService.delete(id);
         log.info("delete: finished for id: {}", id);
     }
 
-    @PutMapping( "/{id}")
+    @PutMapping("/{id}")
     void update(@RequestBody StockRequestDto stockRequestDto, @PathVariable Long id) {
         log.debug("update: started with: {}", id);
         stockService.update(id, stockRequestDto);

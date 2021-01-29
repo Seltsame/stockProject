@@ -1,16 +1,18 @@
 package ru.rocketscience.test;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
+import ru.rocketscience.test.common.ResponseDto;
 import ru.rocketscience.test.stockPlace.ManyStockPlacesResponseDto;
 import ru.rocketscience.test.stockPlace.StockPlaceRequestDto;
-import ru.rocketscience.test.common.ResponseDto;
 import ru.rocketscience.test.stockPlace.StockPlaceResponseDto;
 
+import java.lang.reflect.Type;
 import java.net.URI;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -36,16 +38,29 @@ public class StockPlaceTests extends BaseApplicationTest {
     };
 
     //метод для простоты вызова метода getObjectFromResourceJson();
-    private <T> T getFromJson(String jsonFileName, Class<T> dtoClass) {
+   /* private <T> T getFromJson(String jsonFileName, Class<T> dtoClass) {
         return getObjectFromResourceJson(StockPlaceTests.class, jsonFileName, dtoClass);
+    }*/
+    private <T> T getFromJson(String jsonFileName, TypeReference<T> typeReference) {
+        return getObjectFromResourceJson(StockPlaceTests.class, jsonFileName, typeReference);
+    }
+
+    private <T> T getFromJson(String jsonFileName, Class<T> dtoClass) {
+        return getObjectFromResourceJson(StockPlaceTests.class, jsonFileName, new TypeReference<T>() {
+            @Override
+            public Type getType() {
+                return dtoClass;
+            }
+        });
     }
 
     private static final String jsonFileNameReq = "/stockPlace/addStockPlace.req.json";
 
-   /* @BeforeEach
+    @BeforeEach
     public void setupUrl() {
         stockPlaceUrl = "http://localhost:" + port + "/stockplace/";
-    }*/
+        stockUrl = "http://localhost:" + port + "/stock/";
+    }
 
     @ParameterizedTest
     @CsvSource(delimiter = '|', value = {
@@ -53,7 +68,7 @@ public class StockPlaceTests extends BaseApplicationTest {
             "сорок|Id места должен быть указан числом! Ошибка ввода в: id, со значением value: сорок"})
     void testInvalidGet(String id, String expectedMessage) {
         ResponseEntity<ResponseDto<StockPlaceResponseDto>> responseEntity
-                = testRestTemplate.exchange(stockUrl + id, HttpMethod.GET, null,
+                = testRestTemplate.exchange(stockPlaceUrl + id, HttpMethod.GET, null,
                 STOCKPLACE_RESPONSE);
         assertThat(responseEntity.getBody()).isNotNull();
         assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
@@ -73,7 +88,7 @@ public class StockPlaceTests extends BaseApplicationTest {
     @Test
     void testDelete() {
         Long id = createStockPlace(getStockPlaceRequestDto(jsonFileNameReq));
-        testRestTemplate.exchange(stockUrl + id, HttpMethod.DELETE, null, Void.class);
+        testRestTemplate.exchange(stockPlaceUrl + id, HttpMethod.DELETE, null, Void.class);
         testInvalidGet(String.valueOf(id), "Места с id = " + id + " не существует!");
     }
 
@@ -88,7 +103,7 @@ public class StockPlaceTests extends BaseApplicationTest {
         Long id = createAndTestStockPlace(jsonFileNameBeforeUpd);
 
         RequestEntity<StockPlaceRequestDto> requestEntityUpd
-                = RequestEntity.put(URI.create(stockUrl + id)).contentType(MediaType.APPLICATION_JSON)
+                = RequestEntity.put(URI.create(stockPlaceUrl + id)).contentType(MediaType.APPLICATION_JSON)
                 .body(getStockPlaceRequestDto(jsonFileNameAfterUpd));
 
         ResponseEntity<Void> responseEntityUpd = testRestTemplate.exchange(requestEntityUpd, Void.class);
@@ -98,7 +113,7 @@ public class StockPlaceTests extends BaseApplicationTest {
 
     @Test
     void testAddManyStockPlaces() {
-        String resourceUrlAddStockPlaces = stockUrl + "addStockPlaces/";
+        String resourceUrlAddStockPlaces = stockPlaceUrl + "addStockPlaces/";
         StockPlaceRequestDto stockPlaceRequestDto
                 = getStockPlaceRequestDto("/stockPlace/addManyStockPlaces.req.json");
 
@@ -113,18 +128,16 @@ public class StockPlaceTests extends BaseApplicationTest {
                         + stockPlaceRequestDto.getStockId(),
                 HttpMethod.GET, null, LONG_RESPONSE);
 
-        long expectedStockCapacity = 20;
+        long expectedStockCapacity = 249;
         assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(responseEntity.getBody()).isNotNull();
         assertThat(responseEntity.getBody().getData())
                 .isEqualTo(expectedStockCapacity);
-
-
     }
 
     void testGet(String id, StockPlaceResponseDto stockPlaceResponseDto) {
         ResponseEntity<ResponseDto<StockPlaceResponseDto>> responseEntity
-                = testRestTemplate.exchange(stockUrl + id, HttpMethod.GET, null, STOCKPLACE_RESPONSE);
+                = testRestTemplate.exchange(stockPlaceUrl + id, HttpMethod.GET, null, STOCKPLACE_RESPONSE);
         assertThat(responseEntity.getBody()).isNotNull();
         StockPlaceResponseDto data = responseEntity.getBody().getData();
 
@@ -136,10 +149,10 @@ public class StockPlaceTests extends BaseApplicationTest {
     //создаём сущность сразу requestDto созданную из JSONки
     private Long createStockPlace(StockPlaceRequestDto stockPlaceRequestDto) {
         RequestEntity<StockPlaceRequestDto> requestEntity
-                = RequestEntity.post(URI.create(stockUrl)).contentType(MediaType.APPLICATION_JSON)
+                = RequestEntity.post(URI.create(stockPlaceUrl)).contentType(MediaType.APPLICATION_JSON)
                 .body(stockPlaceRequestDto);
 
-        Long id = testRestTemplate.postForObject(stockUrl, requestEntity, Long.class);
+        Long id = testRestTemplate.postForObject(stockPlaceUrl, requestEntity, Long.class);
         assertThat(id).isNotNull();
         return id;
     }

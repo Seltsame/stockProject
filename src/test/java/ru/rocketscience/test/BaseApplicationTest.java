@@ -1,5 +1,6 @@
-package ru.rosketscience.test;
+package ru.rocketscience.test;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +13,8 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.util.Collection;
+import java.util.List;
 
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -46,20 +49,23 @@ public class BaseApplicationTest {
     @LocalServerPort
     protected int port;
 
-
     public static String resourceUrl;
+    public static String productUrl;
+    public static String stockUrl;
+    public static String stockPlaceUrl;
 
     @BeforeEach
     public void setupUrl() {
         resourceUrl = "http://localhost:" + port;
-        productUrl = resourceUrl + "/product/";
-        stockUrl = resourceUrl + "/stock/";
-        stockPlaceUrl = resourceUrl + "/stockPlace/";
     }
 
+    //создаем метод, который возвращает предыдущий метод, только с вложенным objectMapper
+    protected <T> T getObjectFromResourceJson(Class<?> testClass, String jsonFileName, TypeReference<T> typeReference) {
+        return Utils.getObjectFromResourceJsonObjMap(objectMapper, testClass, jsonFileName, typeReference);
+    }
 
     //создаем метод, который возвращает предыдущий метод, только с вложенным objectMapper
-    protected <T> T getObjectFromResourceJson(Class<?> testClass, String jsonFileName, Class<T> objectClass) {
-        return Utils.getObjectFromResourceJsonObjMap(objectMapper, testClass, jsonFileName, objectClass);
+    protected <T> List<T> getObjectListFromResourceJson(Class<?> testClass, Class<? extends Collection> type, String jsonFileName, Class<T> objectClass) {
+        return Utils.getObjectFromResourceJsonObjMapToCollection(objectMapper, testClass, type, jsonFileName, objectClass);
     }
 }

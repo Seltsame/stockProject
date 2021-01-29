@@ -1,41 +1,74 @@
 package ru.rocketscience.test;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import lombok.Value;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
-import ru.rosketscience.test.common.ResponseDto;
-import ru.rosketscience.test.product.ProductPlacementDto;
-import ru.rosketscience.test.product.ProductRequestDto;
-import ru.rosketscience.test.product.ProductResponseDto;
-import ru.rosketscience.test.stock.StockFreeSpaceResponseDto;
-import ru.rosketscience.test.stock.StockRequestDto;
+import ru.rocketscience.test.common.ResponseDto;
+import ru.rocketscience.test.product.*;
 
+import java.lang.reflect.Type;
+import java.math.BigDecimal;
 import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Collection;
+import java.util.List;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static ru.rocketscience.test.ProductTests.TestCase.args;
+import static ru.rocketscience.test.ProductTests.TestCase.argsCriteria;
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class ProductTests extends BaseApplicationTest {
 
-    public static final ParameterizedTypeReference<ResponseDto<ProductResponseDto>> PRODUCT_RESPONSE =
-            new ParameterizedTypeReference<>() {
-            };
+    private static final ParameterizedTypeReference<ResponseDto<ProductResponseDto>> PRODUCT_RESPONSE = new ParameterizedTypeReference<>() {
+    };
+    private static final ParameterizedTypeReference<ResponseDto<List<FilterResultDto>>> CRITERIA_PARAMETRIZED = new ParameterizedTypeReference<>() {
+    };
+    private static final ParameterizedTypeReference<ResponseDto<Long>> PARAMETERIZED_RESPONSE_LONG = new ParameterizedTypeReference<>() {
+    };
+    private static final ParameterizedTypeReference<ResponseDto<ProductFilterResponseDto>> PARAMETERIZED_RESPONSE_FILTER = new ParameterizedTypeReference<>() {
+};
+    private static final ParameterizedTypeReference<ResponseDto<ProductMovementResponseDto>> PARAMETERIZED_RESPONSE_MOVEMENT = new ParameterizedTypeReference<>() {
+};
 
     //метод для простоты вызова метода getObjectFromResourceJson();
+    //конструктор пустого класса возвращает обычные DTO
     private <T> T getFromJson(String jsonFileName, Class<T> dtoClass) {
-        return getObjectFromResourceJson(ProductTests.class, jsonFileName, dtoClass);
+        return getObjectFromResourceJson(ProductTests.class, jsonFileName, new TypeReference<T>() {
+            @Override
+            public Type getType() {
+                return dtoClass;
+            }
+        });
+    }
+
+    private <T> T getFromJson(String jsonFileName, TypeReference<T> typeReference) {
+        return getObjectFromResourceJson(ProductTests.class, jsonFileName, typeReference);
+    }
+
+    //метод для создания коллекций из ДТО
+    private <T> List<T> getListFromJson(String jsonFileName, Class<? extends Collection> collectionType, Class<T> dtoClass) {
+        return getObjectListFromResourceJson(ProductTests.class, collectionType, jsonFileName, dtoClass);
     }
 
     private static final String jsonFileNameReq = "/product/addNewProduct.req.json";
     private static final String jsonFileNameResp = "/product/addNewProduct.resp.json";
 
- /*   @BeforeEach
+    @BeforeEach
     public void setupUrl() {
-        productUrl = resourceUrl + "/product/";
-
-    }*/
+        productUrl = "http://localhost:" + port + "/product/";
+        stockUrl = "http://localhost:" + port + "/stock/";
+    }
 
     @Test
     void testSimpleGet() {
@@ -70,7 +103,6 @@ public class ProductTests extends BaseApplicationTest {
     //тест delete-метода
     @Test
     void testDelete() {
-
         //ЭТО ВСЁ ЛУЧШЕ ВЫНОСИТЬ В ОТДЕЛЬНЫЙ МЕТОД. См. остальные тесты. З.Ы. просто пример.
         //берем данные из json и пишем в RequestDTO
         ProductRequestDto getFromJson
@@ -90,7 +122,6 @@ public class ProductTests extends BaseApplicationTest {
     //тест update-метода
     @Test
     void testUpdate() {
-
         String jsonFileName = "/product/updateProduct.req.json";
         String jsonFileNameUdp = "/product/updateProduct.resp.json";
 
@@ -125,13 +156,9 @@ public class ProductTests extends BaseApplicationTest {
         ProductPlacementDto productPlacementDto
                 = getFromJson("/product/addManyNewProducts.req.json", ProductPlacementDto.class);
 
-        ParameterizedTypeReference<ResponseDto<Long>> parameterizedTypeReferenceResponse =
-                new ParameterizedTypeReference<>() {
-                };
-
         ResponseEntity<ResponseDto<Long>> responseEntityBeforeAddingProduct
                 = testRestTemplate.exchange(resourceUrlForStock + stockId,
-                HttpMethod.GET, null, parameterizedTypeReferenceResponse);
+                HttpMethod.GET, null, PARAMETERIZED_RESPONSE_LONG);
         assertThat(responseEntityBeforeAddingProduct.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(responseEntityBeforeAddingProduct.getBody()).isNotNull();
 
@@ -144,7 +171,7 @@ public class ProductTests extends BaseApplicationTest {
 
         ResponseEntity<ResponseDto<Long>> responseEntityAfterAddingProduct
                 = testRestTemplate.exchange(resourceUrlForStock + stockId,
-                HttpMethod.GET, null, parameterizedTypeReferenceResponse);
+                HttpMethod.GET, null, PARAMETERIZED_RESPONSE_LONG);
         ResponseDto<Long> responseEntityAfter = responseEntityAfterAddingProduct.getBody();
         assertThat(responseEntityAfterAddingProduct.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(responseEntityAfter).isNotNull();
@@ -155,20 +182,16 @@ public class ProductTests extends BaseApplicationTest {
     //фильтр по названию товара
     @ParameterizedTest
     @MethodSource("generateCases")
-    void searchProductByName(TestCase<ProductResponseDto> args) {
+    void searchProduct(TestCase<ProductResponseDto> args) {
 
-        String resourceUrlFilter = resourceUrl + "filterProduct";
-
-        ParameterizedTypeReference<ResponseDto<ProductFilterResponseDto>> parameterizedResponse
-                = new ParameterizedTypeReference<>() {
-        };
+        String resourceUrlFilter = productUrl + "filterProduct";
 
         ResponseEntity<ResponseDto<ProductFilterResponseDto>> responseEntity
                 = testRestTemplate.exchange(
                 resourceUrlFilter + "?" + args.searchString,
                 HttpMethod.GET,
                 null,
-                parameterizedResponse);
+                PARAMETERIZED_RESPONSE_FILTER);
 
         assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(responseEntity.getBody()).isNotNull();
@@ -181,103 +204,52 @@ public class ProductTests extends BaseApplicationTest {
         productFilterList.forEach(args.verifier);
     }
 
-    //вывод списка id товаров, id принадлежащего склада, их остатка на складах по имени города и имени товара
-    //values ('searching_Московский', 'searching_Москва_city'),
-    //       ('searching_Спб склад', 'searching_Санкт-Марино_city'),
-    //       ('searching_Адмиралтейский склад', 'searching_Санкт-Петербург_city');
-    //
-    //INSERT INTO product(name, price)
-    //values ('searching_носки', 500),
-    //       ('searching_неизвестная хрень', 600),
-    //       ('searching_безумно неизвестная хрень', 700),
-    //       ('searching_шоколадка', 800);
     @ParameterizedTest
-    @MethodSource("casesFoCriteria")
-    void searchingByCityAndProduct(TestCase<ProductCriteriaFilterResponseDto> args) {
-        String productFilterUrl = resourceUrl + "filterCriteria";
+    @MethodSource("casesForCriteria") //
+    void searchingByCityAndProduct(TestCase<List<FilterResultDto>> args) {
+        String productFilterUrl = productUrl + "filterCriteria";
 
-        ParameterizedTypeReference<ResponseDto<List<ProductCriteriaFilterResponseDto>>> parameterizedResponse
-                = new ParameterizedTypeReference<>() {
-        };
-        ResponseEntity<ResponseDto<List<ProductCriteriaFilterResponseDto>>> responseEntity
+        ResponseEntity<ResponseDto<List<FilterResultDto>>> responseEntity
                 = testRestTemplate.exchange(productFilterUrl + "?" + args.searchString,
                 HttpMethod.GET,
                 null,
-                parameterizedResponse);
+                CRITERIA_PARAMETRIZED);
         assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(responseEntity.getBody()).isNotNull();
 
-        List<ProductCriteriaFilterResponseDto> dataList = responseEntity.getBody().getData();
+        List<FilterResultDto> dataList = responseEntity.getBody().getData();
         long count = dataList.stream()
-                .filter(pl -> pl.getProductName().startsWith("searching")).count();
+                .filter(pl -> pl.getProduct().getName().startsWith("search2")).count();
 
         assertThat(count).isEqualTo(args.getExpectedSize());
-        dataList.forEach(args.getVerifier());
+        args.verifier.accept(dataList); //сравнение списков DTO: response + from Stream
     }
 
-
- /*   void filterTestTemplate(TestCase arg) {
-        String resourceUrlFilter = resourceUrl + "searchStock";
-        ParameterizedTypeReference<ResponseDto<StockFilterResponseDto>> stockResponse =
-                new ParameterizedTypeReference<>() {
-                };
-
-        ResponseEntity<ResponseDto<StockFilterResponseDto>> responseEntityDto
-                = testRestTemplate.exchange(
-                //URLEncoder.encode кодируем рус к стандартной UTF-8 для поисковой строки
-                resourceUrlFilter + "?" + arg.searchString,
-                HttpMethod.GET,
-                null,
-                stockResponse);
-        assertThat(responseEntityDto.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(responseEntityDto.getBody()).isNotNull(); //responseEntity всегда не null, проверяем body!
-
-        List<StockResponseDto> stockList = responseEntityDto.getBody().getData().getStockList();
-
-        long count = stockList.stream()
-                .filter(sl -> sl.getName().startsWith("searching"))
-                .count();
-        assertThat(count).isEqualTo(arg.expectedSize);
-        stockList.forEach(arg.verifier);*/
-
-    /*INSERT INTO product(name, price)
-values ('searching_носки', 500),
-       ('searching_неизвестная хрень', 600),
-       ('searching_безумно неизвестная хрень', 700),
-       ('searching_шоколадка', 800);
-*/
-
-    //поиск по названию в диапазоне цен
-    //Выдаёт неправильные данные, при макс диапазоне.
     @Test
-    void searchProductByNameAndPrice() {
-        String productFilterUrl = resourceUrl + "filterProduct";
-
-        ParameterizedTypeReference<ResponseDto<ProductFilterResponseDto>> responseDtoParameterized
-                = new ParameterizedTypeReference<>() {
-        };
-
-        ResponseEntity<ResponseDto<ProductFilterResponseDto>> responseEntity
-                = testRestTemplate.exchange(productFilterUrl + "?name=неизв&minPrice=510&maxPrice=770",
+    void searchingByCityAndProduct() {
+        String productFilterUrl = productUrl + "filterCriteria";
+        Long expectedSize = 2L;
+        ResponseEntity<ResponseDto<List<FilterResultDto>>> responseEntity
+                = testRestTemplate.exchange(productFilterUrl + "?product=uct",
                 HttpMethod.GET,
                 null,
-                responseDtoParameterized);
+                CRITERIA_PARAMETRIZED);
         assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(responseEntity.getBody()).isNotNull();
 
-        List<ProductResponseDto> productFilteredList = responseEntity.getBody().getData().getProductList();
-        //см тут
-        long count = productFilteredList.stream()
-                .filter(pr ->
-                        pr.getName().startsWith("searching"))
-                .count();
-        assertThat(count).isEqualTo(3);
+        List<FilterResultDto> dataList = responseEntity.getBody().getData();
+        long count = dataList.stream()
+                .filter(pl -> pl.getProduct().getName().startsWith("search2")).count();
 
-        productFilteredList.forEach(pr -> {
-            assertThat(pr.getName()).contains("неизв");
-            assertThat(pr.getPrice()).isGreaterThan(BigDecimal.valueOf(510));
-            assertThat(pr.getPrice()).isLessThan(BigDecimal.valueOf(770));
-        });
+        assertThat(count).isEqualTo(expectedSize);
+
+        List<FilterResultDto> listFromJson = getFromJson("/product/criteriaSearchByName.resp.json",
+                new TypeReference<>() {
+                });
+        dataList.forEach(dt ->
+                assertThat(dt.getProduct().getName())
+                        .contains("uct"));
+        assertThat(dataList).isEqualTo(listFromJson);
     }
 
     //перемещение товаров между складами
@@ -287,36 +259,30 @@ values ('searching_носки', 500),
         long stockId = 6L;
         long stockFreeSpace = 502L;
 
-        String resourceUrlMovementProducts = resourceUrl + "moveProducts/";
-        ProductMovementRequestDto productMovementRequestDto
+        String resourceUrlMovementProducts = productUrl + "moveProducts/";
+        ProductMovementRequestDto movementRequestDto
                 = getFromJson("/product/movementProductsBetweenStocks.req.json", ProductMovementRequestDto.class);
 
-        ProductMovementResponseDto productMovementResponseDtoJson
+        ProductMovementResponseDto movementResponseDtoJson
                 = getFromJson("/product/movementProductsBetweenStocks.resp.json", ProductMovementResponseDto.class);
 
-        ParameterizedTypeReference<ResponseDto<ProductMovementResponseDto>> parameterizedProductResponse
-                = new ParameterizedTypeReference<>() {
-        };
-        ParameterizedTypeReference<ResponseDto<Long>> parameterizedResponseAfterMoving =
-                new ParameterizedTypeReference<>() {
-                };
         RequestEntity<ProductMovementRequestDto> requestEntity
                 = RequestEntity.post(URI.create(resourceUrlMovementProducts)).
-                contentType(MediaType.APPLICATION_JSON).body(productMovementRequestDto);
+                contentType(MediaType.APPLICATION_JSON).body(movementRequestDto);
 
         ResponseEntity<ResponseDto<ProductMovementResponseDto>> responseEntity
-                = testRestTemplate.exchange(requestEntity, parameterizedProductResponse);
+                = testRestTemplate.exchange(requestEntity, PARAMETERIZED_RESPONSE_MOVEMENT);
         assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(responseEntity.getBody()).isNotNull();
 
         ProductMovementResponseDto data = responseEntity.getBody().getData();
-        assertThat(data.getProductId()).isEqualTo(productMovementResponseDtoJson.getProductId());
-        assertThat(data.getStockplaceId()).isEqualTo(productMovementResponseDtoJson.getStockplaceId());
-        assertThat(data.getStockId()).isEqualTo(productMovementResponseDtoJson.getStockId());
+        assertThat(data.getProductId()).isEqualTo(movementResponseDtoJson.getProductId());
+        assertThat(data.getStockplaceId()).isEqualTo(movementResponseDtoJson.getStockplaceId());
+        assertThat(data.getStockId()).isEqualTo(movementResponseDtoJson.getStockId());
 
         ResponseEntity<ResponseDto<Long>> responseEntityAfterMovingProducts
                 = testRestTemplate.exchange(resourceUrlForStock + stockId,
-                HttpMethod.GET, null, parameterizedResponseAfterMoving);
+                HttpMethod.GET, null, PARAMETERIZED_RESPONSE_LONG);
         assertThat(responseEntityAfterMovingProducts.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(responseEntityAfterMovingProducts).isNotNull();
 
@@ -331,7 +297,7 @@ values ('searching_носки', 500),
 
         ResponseEntity<ResponseDto<ProductResponseDto>> response
                 = testRestTemplate.exchange(productUrl + id, HttpMethod.GET, null, PRODUCT_RESPONSE);
-                = testRestTemplate.exchange(resourceUrl + id, HttpMethod.GET, null, PRODUCT_RESPONSE);
+
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
         ProductResponseDto data = response.getBody().getData();
@@ -357,14 +323,12 @@ values ('searching_носки', 500),
 
     //метод для получения id сущности при создании из JSON + тесты на null + get-тесты
     private Long createAndTestProductForStockMethods(String jsonFileName) {
-
         //подставляем значения из преобразованного json: addNewProduct.req.json
         //берем id сущности
         Long id = createProductForStockMethods(getProductRequestDto(jsonFileName));
 
         //подставляем значения из преобразованного json: addNewProduct.req.json
         testGet(String.valueOf(id), getProductResponseDto(jsonFileName));
-
         return id;
     }
 
@@ -378,11 +342,12 @@ values ('searching_носки', 500),
         return getFromJson(jsonFileNameResp, ProductResponseDto.class);
     }
 
+    //метод для кодировок в
     private String getEncoded(String string) {
         return URLEncoder.encode(string, StandardCharsets.UTF_8);
     }
 
-    @Value
+    @Value //класс тесткейсов. В параметрах поисковая строка + Consumer, а так ж ожидаемый размер длины списка
     static class TestCase<T> {
         String searchString;
         Consumer<T> verifier;
@@ -392,25 +357,55 @@ values ('searching_носки', 500),
             return new TestCase<>(searchString, verifier, expectedSize);
         }
 
-        static TestCase<ProductCriteriaFilterResponseDto> argsCriteria(
-                String searchString, Consumer<ProductCriteriaFilterResponseDto> verifier, long expectedSize) {
+        static TestCase<List<FilterResultDto>> argsCriteria(
+                String searchString, Consumer<List<FilterResultDto>> verifier, long expectedSize) {
             return new TestCase<>(searchString, verifier, expectedSize);
         }
     }
-//создать имя+минцена+максцена в аргс
+
+    //создать имя+минцена+максцена в args
     private static Stream<TestCase<ProductResponseDto>> generateCases() {
         return Stream.of(
                 args("name=неизв", pr -> assertThat(pr.getName()).contains("неизв"), 2L),
                 args("minPrice=510", pr -> assertThat(pr.getPrice()).isGreaterThan(BigDecimal.valueOf(510)), 3L),
-                args("maxPrice=590", pr -> assertThat(pr.getPrice()).isLessThan(BigDecimal.valueOf(590)), 1L)
-        );
+                args("maxPrice=590", pr -> assertThat(pr.getPrice()).isLessThan(BigDecimal.valueOf(590)), 1L),
+                args("name=извест&minPrice=510&maxPrice=770",
+                        pr -> {
+                            assertThat(pr.getName()).contains("извест");
+                            assertThat(pr.getPrice()).isGreaterThan(BigDecimal.valueOf(510));
+                            assertThat(pr.getPrice()).isLessThan(BigDecimal.valueOf(710));
+                        },
+                        2L));
     }
 
-    private static Stream<TestCase<ProductCriteriaFilterResponseDto>> casesFoCriteria() {
+    private Stream<TestCase<List<FilterResultDto>>> casesForCriteria() {
+        List<FilterResultDto> listFilterByName
+                = getFromJson("/product/criteriaSearchByName.resp.json", new TypeReference<>() {
+        });
+        List<FilterResultDto> listFilterByCity
+                = getFromJson("/product/criteriaSearchByCity.resp.json", new TypeReference<>() {
+        });
+        List<FilterResultDto> listFilterByNameCity
+                = getFromJson("/product/criteriaSearchByNameCity.resp.json", new TypeReference<>() {
+        });
         return Stream.of(
-                argsCriteria("product=рен", pr -> assertThat(pr.getProductName()).contains("рен"), 2L),
-                argsCriteria("city=оскв", pr -> assertThat(pr.getProductName()).contains("оскв"), 2L)
+                argsCriteria("product=uct", result -> {
+                    result.forEach(each -> assertThat(each.getProduct().getName()).contains("uct"));
+                    assertThat(result).isEqualTo(listFilterByName);
+                }, 2L),
+
+                argsCriteria("city=ch2_city", result -> {
+                    assertThat(result.get(0).getStockDto().get(0).getCity()).contains("ch2_city");
+                    assertThat(result.get(1).getStockDto().get(0).getCity()).contains("ch2_city");
+                    assertThat(result.get(2).getStockDto().get(0).getCity()).contains("ch2_city");
+                    assertThat(result).isEqualTo(listFilterByCity);
+                }, 3L),
+                argsCriteria("product=rod_3&city=ch2_city", result -> {
+                    assertThat(result.get(0).getProduct().getName()).contains("rod_3");
+                    assertThat(result.get(0).getStockDto().get(0).getCity()).contains("ch2_city");
+                    assertThat(result.get(0).getStockDto().get(0).getQuantity()).isEqualTo(30);
+                    assertThat(result).isEqualTo(listFilterByNameCity);
+                }, 1L)
         );
     }
-
 }

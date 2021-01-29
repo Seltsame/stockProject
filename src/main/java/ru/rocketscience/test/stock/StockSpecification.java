@@ -1,10 +1,11 @@
-package ru.rosketscience.test.stock;
+package ru.rocketscience.test.stock;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.util.StringUtils;
 
 import javax.persistence.criteria.Predicate;
+
 @Configuration
 public class StockSpecification {
 

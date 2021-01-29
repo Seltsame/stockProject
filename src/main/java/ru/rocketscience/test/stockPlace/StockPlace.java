@@ -9,10 +9,11 @@ import java.util.Set;
 
 @Entity
 @Builder
-@Data
+@Setter
+@Getter
 @AllArgsConstructor
 @NoArgsConstructor
-//@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@EqualsAndHashCode
 public class StockPlace {
 
     /*
@@ -29,7 +30,7 @@ public class StockPlace {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @ToString.Exclude //помеченное поле для переопределение методов
+    // @ToString.Exclude //помеченное поле для переопределение методов
     @EqualsAndHashCode.Include  //помеченное поле для переопределение методов
     private Long id;
 
@@ -56,4 +57,16 @@ public class StockPlace {
 
     @OneToMany(mappedBy = "stockPlace")
     Set<ProductOnStockPlace> stockPlaceOnStockPlaceSet;
+
+    @Override
+    public String toString() {
+        return "StockPlace{" +
+                "id=" + id +
+                ", row='" + row + '\'' +
+                ", shelf=" + shelf +
+                ", capacity=" + capacity +
+                ", stock=" + stock +
+                ", stockPlaceOnStockPlaceSet=" + stockPlaceOnStockPlaceSet +
+                '}';
+    }
 }
