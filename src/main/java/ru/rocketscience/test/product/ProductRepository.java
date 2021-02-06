@@ -17,7 +17,7 @@ interface ProductRepository extends CrudRepository<Product, Long>, JpaSpecificat
 
     //сумма количества товаров на полке по id полки
     @Query("SELECT sum(psp.quantityProduct) FROM ProductOnStockPlace psp " +
-            "JOIN StockPlace sp on sp = psp.stockPlace WHERE sp.id = :stockPlaceId ")
+            "JOIN StockPlace sp ON sp = psp.stockPlace WHERE sp.id = :stockPlaceId ")
     long getSumQuantityProductByStockPlaceId(@Param("stockPlaceId") Long stockPlaceId);
 
     List<Product> findAll(Specification<Product> specification);

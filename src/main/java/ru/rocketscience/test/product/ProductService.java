@@ -7,7 +7,6 @@ import ru.rocketscience.test.ValidateException;
 import ru.rocketscience.test.common.IdNameDto;
 import ru.rocketscience.test.productOnStockPlace.ProductOnStockPlace;
 import ru.rocketscience.test.productOnStockPlace.ProductOnStockPlaceRepository;
-import ru.rocketscience.test.productOnStockPlace.ProductOnStockPlaceSpecification;
 import ru.rocketscience.test.stock.Stock;
 import ru.rocketscience.test.stock.StockRepository;
 import ru.rocketscience.test.stockPlace.StockPlace;
@@ -31,7 +30,6 @@ class ProductService {
     private final StockPlaceRepository stockPlaceRepository;
     private final ProductSpecification productSpecification;
     private final ProductOnStockPlaceRepository productOnStockPlaceRepository;
-    private final ProductOnStockPlaceSpecification productOnStockPlaceSpecification;
 
     ProductResponseDto getById(Long id) {
         return productMapper.fromEntity(getProductEntityById(id));
@@ -56,11 +54,17 @@ class ProductService {
     void update(Long id, ProductRequestDto productRequestDto) {
         Product productToUpd = getProductEntityById(id);
         productToUpd.setName(productRequestDto.getName());
-        productToUpd.setPrice(productRequestDto.getPrice());
+        productToUpd.setPrice(productRequestDto.getPrice()); //напиши через маппер
         productRepository.save(productToUpd);
-    }
+    }/*@Transactional
+    void update(Long id, ProductRequestDto productRequestDto) {
+        Product productToUpd = getProductEntityById(id);
+        productToUpd.setName(productRequestDto.getName());
+        productToUpd.setPrice(productRequestDto.getPrice()); //напиши через маппер
+        productRepository.save(productToUpd);
+    }*/
 
-    //добавление нескольких однотипных товаров в конкретный склад - место c проверкой на вместимость
+
     @Transactional
     void addProductsToStockPlace(ProductPlacementDto productPlacementDto) {
         long productId = productPlacementDto.getProductId();//id товара
@@ -76,7 +80,7 @@ class ProductService {
             /*throw new ValidateException("Такое количество товара: " + quantityProductFromDTO + " не поместится на выбранное складское место с id: "
                     + stockPlaceId + ". Место имеет вместимость:" + capacityStockPlace + ". " +
                     "На нем уже лежит: " + quantityProductOnStockPlace + ", выберите другое место!");*/
-            validateException(stockPlaceId, capacityStockPlace, quantityProductFromDTO, quantityProductOnStockPlace);
+            trowValidateException(stockPlaceId, capacityStockPlace, quantityProductFromDTO, quantityProductOnStockPlace);
         }
         ProductOnStockPlace productOnStockPlaceEntity = getProductOnStockPlace(productEntity, stockPlace, totalProductQuantity);
         productOnStockPlaceRepository.save(productOnStockPlaceEntity);
@@ -88,15 +92,15 @@ class ProductService {
         long productId = productMovementRequestDto.getProductId();
         Product productEntity = getProductEntityById(productId);
         StockPlace stockPlaceEntity = getStockPlaceEntityById(productMovementRequestDto.getStockPlaceIdFrom());
-        StockPlace stockPlaceEntityFinal = getStockPlaceEntityById(productMovementRequestDto.getFinalStockPlaceId());
-        Long stockEntityFinalId = stockPlaceEntityFinal.getStock().getId();
-        Stock stockEntityFinal = getStockEntityFromId(stockEntityFinalId);
-        Long stockPlaceEntityFinalId = stockPlaceEntityFinal.getId(); //id нового складского места, куда добавляется товар
-        long capacityStockPlace = stockPlaceEntityFinal.getCapacity(); //вместимость полки куда хотим переместить
+        StockPlace stockPlaceEntityTo = getStockPlaceEntityById(productMovementRequestDto.getStockPlaceIdTo());
+        Long stockEntityToId = stockPlaceEntityTo.getStock().getId();
+        Stock stockEntityTo = getStockEntityFromId(stockEntityToId);
+        Long stockPlaceEntityToId = stockPlaceEntityTo.getId(); //id нового складского места, куда добавляется товар
+        long capacityStockPlace = stockPlaceEntityTo.getCapacity(); //вместимость полки куда хотим переместить
         long productQuantityToMove = productMovementRequestDto.getProductQuantityToMove(); //количество товара для перемещения
-        long quantityProductOnStockPlace = productRepository.getSumQuantityProductByStockPlaceId(stockPlaceEntityFinalId);//сколько товара уже лежит
+        long quantityProductOnStockPlace = productRepository.getSumQuantityProductByStockPlaceId(stockPlaceEntityToId);//сколько товара уже лежит
 
-        StockPlace stockPlace = getStockPlaceBuilder(stockPlaceEntityFinal, stockEntityFinal);
+        StockPlace stockPlace = getStockPlaceBuilder(stockPlaceEntityTo, stockEntityTo);
         /*if (quantityProductOnStockPlace.equals(null)) {
             ProductOnStockPlace productOnStockPlaceEntity = productOnStockPlaceRepository.getByStockPlaceId(stockPlace.getId()).orElseThrow(()
                     -> new ValidateException("Ошибка! Неправильные данные!"));
@@ -109,23 +113,22 @@ class ProductService {
         long sumQuantityProductByStockPlaceAndProduct //количество конкретного продукта на конкретной полке
                 = productOnStockPlaceByStockPlaceAndProduct.getQuantityProduct();
         if (capacityStockPlace < totalProductQuantityFinal) {
-            validateException(stockPlaceEntityFinalId, capacityStockPlace, productQuantityToMove, quantityProductOnStockPlace);
+            trowValidateException(stockPlaceEntityToId, capacityStockPlace, productQuantityToMove, quantityProductOnStockPlace);
         }
 
-        //     StockPlace stockPlace = getStockPlaceBuilder(stockPlaceEntityFinal, stockEntityFinal);
-
-        if (!(productQuantityToMove == sumQuantityProductByStockPlaceAndProduct)) { //update,если не равно к-во
+        //update,если к-во перемещаемого товара меньше того, сколько остается на полке, с которой перемещаем
+        if (productQuantityToMove < sumQuantityProductByStockPlaceAndProduct) {
             ProductOnStockPlace productOnStockPlaceEntity
-                    = getProductOnStockPlace(productEntity, stockPlaceEntityFinal, quantityProductOnStockPlace);
+                    = getProductOnStockPlace(productEntity, stockPlaceEntityTo, quantityProductOnStockPlace);
 
             productOnStockPlaceEntity.setQuantityProduct(quantityProductOnStockPlace - productQuantityToMove); //обновляем количество товара на полке
             productOnStockPlaceRepository.save(productOnStockPlaceEntity);
             stockPlaceRepository.save(stockPlace);
-            return productMovementResponseDto(productId, stockPlaceEntityFinal, stockEntityFinal);
-        }
+            return productMovementResponseDto(productId, stockPlaceEntityTo, stockEntityTo);
+        }//если равно, то не остаётся товара на полке - delete
         stockPlaceRepository.save(stockPlace);
         productOnStockPlaceRepository.deleteByProductId(productId);
-        return productMovementResponseDto(productId, stockPlaceEntityFinal, stockEntityFinal);
+        return productMovementResponseDto(productId, stockPlaceEntityTo, stockEntityTo);
     }
 
     //динамический фильтр по критериям по товару
@@ -136,9 +139,7 @@ class ProductService {
                 .stream()
                 .map(productMapper::fromEntity)
                 .collect(Collectors.toList());
-        return ProductFilterResponseDto.builder()
-                .productList(productListByParam)
-                .build();
+        return new ProductFilterResponseDto(productListByParam);
     }
 
     /*    @Transactional
@@ -189,15 +190,17 @@ class ProductService {
     }
 
     //конвертер для динамического фильтра Product -> FilterResult
-    private FilterResultDto converter(Product product) {
+    /*private FilterResultDto converter(Product product) {
         IdNameDto productIdName = IdNameDto.builder()
                 .id(product.getId())
                 .name(product.getName())
                 .build();
         long quantity = 0L;
-        Set<ProductOnStockPlace> stockPlaceSet = product.getProductOnStockPlaceSet();
+
+                Set<ProductOnStockPlace> stockPlaceSet = product.getProductOnStockPlaceSet();
         List<StockPlaceFilterDto> stockPlaceList = new ArrayList<>();
         for (ProductOnStockPlace ps : stockPlaceSet) {
+            Long stockId = ps.getStockPlace().getStock().getId();
             StockPlaceFilterDto stockPlaceFilterDto = StockPlaceFilterDto.builder()
                     .id(ps.getStockPlace().getId())
                     .row(ps.getStockPlace().getRow())
@@ -214,6 +217,47 @@ class ProductService {
             String name = stock.getName();
             String city = stock.getCity();
             FilterResultDto.StockDto stockDto = new FilterResultDto.StockDto(id, name);
+            stockDto.setQuantity(quantity);
+            stockDto.setCity(city);
+            stockDto.setStockPlaceFilterDto(stockPlaceList);
+            stockDtoList.add(stockDto);
+        }
+        return FilterResultDto.builder()
+                .product(productIdName)
+                .stockDto(stockDtoList)
+                .build();
+    }*/
+    private FilterResultDto converter(Product product) {
+        IdNameDto productIdName = IdNameDto.builder()
+                .id(product.getId())
+                .name(product.getName())
+                .build();
+        long quantity = 0L;
+        List<FilterResultDto.StockDto> stockDtoList = new ArrayList<>();
+        List<StockPlaceFilterDto> stockPlaceList = new ArrayList<>();
+        Set<ProductOnStockPlace> stockPlaceSet = product.getProductOnStockPlaceSet(); //set psp по товару
+        for (ProductOnStockPlace psp : stockPlaceSet) {
+
+            Stock stock = psp.getStockPlace().getStock();
+            Long stockId = stock.getId(); //берем stockId
+            Set<ProductOnStockPlace> byStockId
+                    = stockPlaceSet
+                    .stream()
+                    .filter(each -> //фильтр соответствующих stock place по stock id
+                            each.getStockPlace().getStock().getId().equals(stockId)).collect(Collectors.toSet());
+            for (ProductOnStockPlace ps : byStockId) { //заполнение листа stock place, в соответствии со stock id
+                StockPlaceFilterDto stockPlaceFilterDto = StockPlaceFilterDto.builder()
+                        .id(ps.getStockPlace().getId())
+                        .row(ps.getStockPlace().getRow())
+                        .shelf(ps.getStockPlace().getShelf())
+                        .quantity(ps.getQuantityProduct())
+                        .build();
+                quantity += ps.getQuantityProduct();
+                stockPlaceList.add(stockPlaceFilterDto);
+            } //заполнение stock dto исходя из определенного stockId
+            String name = stock.getName();
+            String city = stock.getCity();
+            FilterResultDto.StockDto stockDto = new FilterResultDto.StockDto(stockId, name);
             stockDto.setQuantity(quantity);
             stockDto.setCity(city);
             stockDto.setStockPlaceFilterDto(stockPlaceList);
@@ -245,7 +289,8 @@ class ProductService {
     }
 
     //ошибка при добавлении большого количества товара
-    private void validateException(Long stockPlaceId, long capacityStockPlace, long productQuantity, long quantityProductOnStockPlace) {
+    private void trowValidateException(
+            Long stockPlaceId, long capacityStockPlace, long productQuantity, long quantityProductOnStockPlace) {
         throw new ValidateException("Такое количество товара: " + productQuantity + " не поместится на выбранное складское место с id: "
                 + stockPlaceId + ". Место имеет вместимость:" + capacityStockPlace +
                 ". На нем уже лежит: " + quantityProductOnStockPlace + ", выберите другое место!");

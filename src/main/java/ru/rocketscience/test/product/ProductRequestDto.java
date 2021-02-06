@@ -12,5 +12,5 @@ public class ProductRequestDto {
     BigDecimal price;
     long stockPlaceId;
 
-    public StockPlaceResponseDto stockPlaceResponseDto;
+    StockPlaceResponseDto stockPlaceResponseDto;
 }

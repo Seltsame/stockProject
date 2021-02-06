@@ -29,13 +29,13 @@ public interface ProductOnStockPlaceRepository extends CrudRepository<ProductOnS
 
     //вторая из реализаций запроса и метода для получения stockPlace - freeSpace
     @Query(" FROM ProductOnStockPlace psp " +
-            "JOIN StockPlace sp ON sp = psp.stockPlace JOIN Stock st ON st = sp.stock WHERE st.id =:stock_id")
-    Set<ProductOnStockPlace> getProductOnStockPlaceByStockId(@Param("stock_id") Long stock_id);
+            "JOIN StockPlace sp ON sp = psp.stockPlace JOIN Stock st ON st = sp.stock WHERE st.id =:stockId")
+    Set<ProductOnStockPlace> getProductOnStockPlaceByStockId(@Param("stockId") Long stockId);
 
     //выбор максимального количества продукта в stockPlace конкретного stock по stock_ID
     @Query("SELECT sum(psp.quantityProduct) FROM ProductOnStockPlace psp " +
-            "JOIN StockPlace sp on sp = psp.stockPlace WHERE sp.stock.id = :stock_id ")
-    long getSumQuantityProductByStockId(@Param("stock_id") Long stock_id);
+            "JOIN StockPlace sp on sp = psp.stockPlace WHERE sp.stock.id = :stockId ")
+    long getSumQuantityProductByStockId(@Param("stockId") Long stockId);
 
     //Лучше взять объект и потом с ним работать
     @Query("FROM ProductOnStockPlace psp WHERE psp.stockPlace.id = :stockPlaceId AND psp.product.id = :productId")

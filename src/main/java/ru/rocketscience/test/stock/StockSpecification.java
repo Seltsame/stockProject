@@ -2,11 +2,12 @@ package ru.rocketscience.test.stock;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import javax.persistence.criteria.Predicate;
 
-@Configuration
+@Component
 public class StockSpecification {
 
     public Specification<Stock> findByNameAndCity(final String name, final String city) {

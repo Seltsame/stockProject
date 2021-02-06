@@ -78,7 +78,7 @@ public class ProductTests extends BaseApplicationTest {
     @ParameterizedTest
     @CsvSource(delimiter = '|', value = {
             "47|Товара с id = 47 не существует!",
-            "пять|ID товара должен быть указан числом! Ошибка ввода в: id, со значением value: пять"})
+            "пять|Значение должно быть указано числом! Ошибка ввода в: id, со значением value: пять"})
 
         //тест-метод /get с неправильным id
     void testInvalidGet(String id, String expectedMessage) {
@@ -89,6 +89,7 @@ public class ProductTests extends BaseApplicationTest {
                 PRODUCT_RESPONSE);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().getError()).isEqualTo(expectedMessage);
     }
 
@@ -207,7 +208,7 @@ public class ProductTests extends BaseApplicationTest {
     @ParameterizedTest
     @MethodSource("casesForCriteria") //
     void searchingByCityAndProduct(TestCase<List<FilterResultDto>> args) {
-        String productFilterUrl = productUrl + "filterCriteria";
+        String productFilterUrl = productUrl + "filter";
 
         ResponseEntity<ResponseDto<List<FilterResultDto>>> responseEntity
                 = testRestTemplate.exchange(productFilterUrl + "?" + args.searchString,
@@ -227,7 +228,7 @@ public class ProductTests extends BaseApplicationTest {
 
     @Test
     void searchingByCityAndProduct() {
-        String productFilterUrl = productUrl + "filterCriteria";
+        String productFilterUrl = productUrl + "filter";
         Long expectedSize = 2L;
         ResponseEntity<ResponseDto<List<FilterResultDto>>> responseEntity
                 = testRestTemplate.exchange(productFilterUrl + "?product=uct",

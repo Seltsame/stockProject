@@ -1,7 +1,7 @@
 package ru.rocketscience.test.productOnStockPlace;
 
-import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import ru.rocketscience.test.product.Product;
 import ru.rocketscience.test.stock.Stock;
@@ -13,7 +13,7 @@ import javax.persistence.criteria.Join;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 
-@Configuration
+@Component
 public class ProductOnStockPlaceSpecification {
     /*
     SELECT pr.id, pr.name, psp.stock_place_id, psp.quantity_product, st.id, stКак.city

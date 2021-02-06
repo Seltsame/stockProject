@@ -21,7 +21,7 @@ public class StockPlaceController {
         log.debug("get: started with id: {}", id);
         StockPlaceResponseDto result = stockPlaceService.getById(id);
         log.info("get: finished for id: {}, with result: {}", id, result);
-        return new ResponseDto<>(null, result);
+        return new ResponseDto<>(null,result);
     }
 
     @PostMapping

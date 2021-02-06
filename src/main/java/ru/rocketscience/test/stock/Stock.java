@@ -29,7 +29,7 @@ public class Stock {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @EqualsAndHashCode.Include  //помеченное поле для переопределение методов
-    Long id;
+    private Long id;
 
     private String name;
     private String city;

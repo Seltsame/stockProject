@@ -8,5 +8,5 @@ public class ProductMovementRequestDto {
     long productId;
     long stockPlaceIdFrom;
     long productQuantityToMove;
-    long finalStockPlaceId;
+    long stockPlaceIdTo;
 }

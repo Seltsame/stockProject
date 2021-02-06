@@ -1,7 +1,7 @@
 package ru.rocketscience.test.product;
 
-import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import ru.rocketscience.test.productOnStockPlace.ProductOnStockPlace;
 import ru.rocketscience.test.stock.Stock;
@@ -10,7 +10,7 @@ import javax.persistence.criteria.Join;
 import javax.persistence.criteria.Predicate;
 import java.math.BigDecimal;
 
-@Configuration
+@Component
 public class ProductSpecification {
 
     public Specification<Product> findByNameAndPrice(final String name, final BigDecimal minPrice, final BigDecimal maxPrice) {

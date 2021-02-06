@@ -80,7 +80,7 @@ class StockService {
 
     //вывод максимального количества свободных мест на складе
     @Transactional
-    public Long getStockCapacity(Long id) {
+    Long getStockCapacity(Long id) {
         Stock stock = getStockEntityById(id);
         Long stockPlaceId = stock.getId();
         return stockPlaceRepository.getSumStockPlaceCapacity(stockPlaceId) -
@@ -97,9 +97,7 @@ class StockService {
                 .map(stockMapper::fromEntity) //stock -> stockMapper.fromEntity(stock)
                 .map(StockResponseDto::getName)
                 .collect(Collectors.toList());
-        return StockListResponseDto.builder()
-                .stockList(stockNameList)
-                .build();
+        return new StockListResponseDto(stockNameList);
     }
 /*    @Transactional
     List<String> getStockListByCityName(String cityName) {
@@ -164,7 +162,7 @@ class StockService {
 
     //поиск мест по ид склада вывод в DTO: id место порядковый номер полочки и ряд полочки
     @Transactional
-    public List<StockFreeSpaceDto> getStockPlacesFreeSpace(Long stockId) {
+    List<StockFreeSpaceDto> getStockPlacesFreeSpace(Long stockId) {
         //проверяем склад на существование
         getStockEntityById(stockId);
         List<StockFreeSpaceDto> result = new ArrayList<>();
@@ -254,7 +252,7 @@ class StockService {
         });*/
 
     //поиск и вывод в list всех мест по ид склада
-    public StockResponseDto getStockPlaceByStockId(Long id) {
+    StockResponseDto getStockPlaceByStockId(Long id) {
         getStockEntityById(id);
         List<StockPlace> stockPlacesByStockId = stockPlaceRepository.findStockPlacesByStockId(id);
         List<StockPlaceResponseDto> collect = stockPlacesByStockId.stream()

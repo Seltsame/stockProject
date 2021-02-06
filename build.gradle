@@ -40,7 +40,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.flywaydb:flyway-core' //подключение flyWay
     implementation 'org.mapstruct:mapstruct:1.4.1.Final' //подключение mapStruct
-    implementation 'org.projectlombok:lombok:1.18.16' //подключение Lombok
+    implementation 'org.projectlombok:lombok' //подключение Lombok
     implementation 'io.springfox:springfox-swagger2:2.7.0' //подключение Swagger
     implementation 'io.springfox:springfox-swagger-ui:2.7.0' //подключение Swagger
     compile 'commons-io:commons-io:2.8.0' //вызов IOUtils.toString в Util классе

@@ -13,7 +13,7 @@ import java.util.List;
 
 @Slf4j //включаем логировнаие
 @RestController
-@RequestMapping(path = "product")
+@RequestMapping("product")
 @RequiredArgsConstructor
 public class ProductController {
 
@@ -55,20 +55,20 @@ public class ProductController {
             @RequestParam(name = "name", required = false) String name,
             @RequestParam(name = "minPrice", required = false) BigDecimal minPrice,
             @RequestParam(name = "maxPrice", required = false) BigDecimal maxPrice) {
-        log.debug("findProductByParam: starts with name: {}, minPrice: {}, maxPrice: {}", name, minPrice, maxPrice);
+        log.debug("findProductByParam: started with name: {}, minPrice: {}, maxPrice: {}", name, minPrice, maxPrice);
         ProductFilterResponseDto result = productService.filterProductByParam(name, minPrice, maxPrice);
         log.info("findProductByParam: finished with result: {}", result);
         return new ResponseDto<>(null, result);
     }
 
     //сложный поиск по названию города и товара
-    @GetMapping("filterCriteria")
+    @GetMapping("filter")
     ResponseDto<List<FilterResultDto>> findByCriteria(
             @RequestParam(name = "city", required = false) String city,
             @RequestParam(name = "product", required = false) String product) {
-        log.debug("findByCriteria: starts with city: {}, and product: {}", city, product);
+        log.debug("findByCriteria: started with city: {}, and product: {}", city, product);
         List<FilterResultDto> result = productService.resultCriteriaFilter(city, product);
-        log.info("findByCriteria: starts with result: {}", result);
+        log.info("findByCriteria: finished with result: {}", result);
         return new ResponseDto<>(null, result);
     }
 
@@ -108,7 +108,7 @@ public class ProductController {
     ResponseDto<ProductResponseDto> handlerArgumentTypeMismatchException(MethodArgumentTypeMismatchException ex) {
         String errMessage = ex.getMessage();
         log.error("handlerArgumentTypeMismatchException: finished with exception: + {}", errMessage);
-        return new ResponseDto<>("ID товара должен быть указан числом! "
+        return new ResponseDto<>("Значение должно быть указано числом! "
                 + "Ошибка ввода в: " + ex.getParameter().getParameterName()
                 + ", со значением value: " + ex.getValue(), null);
     }
