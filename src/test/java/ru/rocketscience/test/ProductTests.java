@@ -37,9 +37,9 @@ public class ProductTests extends BaseApplicationTest {
     private static final ParameterizedTypeReference<ResponseDto<Long>> PARAMETERIZED_RESPONSE_LONG = new ParameterizedTypeReference<>() {
     };
     private static final ParameterizedTypeReference<ResponseDto<ProductFilterResponseDto>> PARAMETERIZED_RESPONSE_FILTER = new ParameterizedTypeReference<>() {
-};
+    };
     private static final ParameterizedTypeReference<ResponseDto<ProductMovementResponseDto>> PARAMETERIZED_RESPONSE_MOVEMENT = new ParameterizedTypeReference<>() {
-};
+    };
 
     //метод для простоты вызова метода getObjectFromResourceJson();
     //конструктор пустого класса возвращает обычные DTO
@@ -181,7 +181,7 @@ public class ProductTests extends BaseApplicationTest {
     }
 
     //фильтр по названию товара
-    @ParameterizedTest
+ /*   @ParameterizedTest
     @MethodSource("generateCases")
     void searchProduct(TestCase<ProductResponseDto> args) {
 
@@ -203,10 +203,11 @@ public class ProductTests extends BaseApplicationTest {
 
         assertThat(count).isEqualTo(args.expectedSize);
         productFilterList.forEach(args.verifier);
-    }
+    }*/
 
     @ParameterizedTest
-    @MethodSource("casesForCriteria") //
+    @MethodSource("casesForCriteria")
+        //
     void searchingByCityAndProduct(TestCase<List<FilterResultDto>> args) {
         String productFilterUrl = productUrl + "filter";
 
@@ -226,7 +227,7 @@ public class ProductTests extends BaseApplicationTest {
         args.verifier.accept(dataList); //сравнение списков DTO: response + from Stream
     }
 
-    @Test
+    /*@Test
     void searchingByCityAndProduct() {
         String productFilterUrl = productUrl + "filter";
         Long expectedSize = 2L;
@@ -251,7 +252,7 @@ public class ProductTests extends BaseApplicationTest {
                 assertThat(dt.getProduct().getName())
                         .contains("uct"));
         assertThat(dataList).isEqualTo(listFromJson);
-    }
+    }*/
 
     //перемещение товаров между складами
     @Test
@@ -390,7 +391,7 @@ public class ProductTests extends BaseApplicationTest {
                 = getFromJson("/product/criteriaSearchByNameCity.resp.json", new TypeReference<>() {
         });
         return Stream.of(
-                argsCriteria("product=uct", result -> {
+               /* argsCriteria("product=uct", result -> {
                     result.forEach(each -> assertThat(each.getProduct().getName()).contains("uct"));
                     assertThat(result).isEqualTo(listFilterByName);
                 }, 2L),
@@ -400,13 +401,44 @@ public class ProductTests extends BaseApplicationTest {
                     assertThat(result.get(1).getStockDto().get(0).getCity()).contains("ch2_city");
                     assertThat(result.get(2).getStockDto().get(0).getCity()).contains("ch2_city");
                     assertThat(result).isEqualTo(listFilterByCity);
-                }, 3L),
-                argsCriteria("product=rod_3&city=ch2_city", result -> {
+                }, 3L),*/
+              /*  argsCriteria("product=rod_3&city=ch2_city", result -> {
                     assertThat(result.get(0).getProduct().getName()).contains("rod_3");
                     assertThat(result.get(0).getStockDto().get(0).getCity()).contains("ch2_city");
                     assertThat(result.get(0).getStockDto().get(0).getQuantity()).isEqualTo(30);
                     assertThat(result).isEqualTo(listFilterByNameCity);
-                }, 1L)
+                }, 1L),*/
+                argsCriteria("product=uct_1&city=search2_city_2", result -> {
+                    assertThat(result.get(0).getProduct().getName()).contains("uct_1");
+                    assertThat(result.get(0).getStockDto().get(0).getId()).isEqualTo(11);
+                    assertThat(result.get(0).getStockDto().get(0).getQuantity()).isEqualTo(30);
+                    assertThat(result.get(1).getProduct().getName()).contains("uct_1");
+                    assertThat(result.get(1).getStockDto().get(0).getId()).isEqualTo(11);
+                    assertThat(result.get(1).getStockDto().get(0).getQuantity()).isEqualTo(30);
+                    assertThat(result.get(1).getProduct().getName()).contains("uct_1");
+                    assertThat(result.get(1).getStockDto().get(1).getId()).isEqualTo(12);
+                    assertThat(result.get(1).getStockDto().get(1).getQuantity()).isEqualTo(30);
+
+                }, 3L)
         );
     }
 }
+/*    INSERT INTO stock (name, city)
+    values ('search3_склад_1', 'search3_город_1'), *//*id = 11*//*
+       ('search3_склад_2', 'search3_город_1'), *//*id = 12*//*
+               ('search3_склад_3', 'search3_город_2'); *//*id = 13*//*
+
+               INSERT INTO product(name, price)
+               values ('search3_товар_1', 1100), *//*id = 12*//*
+               ('search3_товар_2', 1200), *//*id = 13*//*
+               ('search3_тов_3', 1300); *//*id = 14*//*
+
+               INSERT INTO stock_place (row, shelf, capacity, stock_id)
+               values ('search3_Первый_ряд', 1, 50, 11), *//*sp_id = 14*//*
+               ('search3_Первый_ряд', 2, 60, 11), *//*sp_id = 15*//*
+               ('search3_Второй_ряд', 2, 70, 12); *//*sp_id = 16*//*
+
+               INSERT INTO product_on_stock_place(product_id, stock_place_id, quantity_product)
+               values (12, 14, 10),
+               (13, 15, 20),
+               (14, 16, 30);*/

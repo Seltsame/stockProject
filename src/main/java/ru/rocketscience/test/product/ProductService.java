@@ -7,6 +7,7 @@ import ru.rocketscience.test.ValidateException;
 import ru.rocketscience.test.common.IdNameDto;
 import ru.rocketscience.test.productOnStockPlace.ProductOnStockPlace;
 import ru.rocketscience.test.productOnStockPlace.ProductOnStockPlaceRepository;
+import ru.rocketscience.test.productOnStockPlace.ProductOnStockPlaceSpecification;
 import ru.rocketscience.test.stock.Stock;
 import ru.rocketscience.test.stock.StockRepository;
 import ru.rocketscience.test.stockPlace.StockPlace;
@@ -16,8 +17,9 @@ import ru.rocketscience.test.stockPlace.StockPlaceRepository;
 import javax.transaction.Transactional;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -30,6 +32,7 @@ class ProductService {
     private final StockPlaceRepository stockPlaceRepository;
     private final ProductSpecification productSpecification;
     private final ProductOnStockPlaceRepository productOnStockPlaceRepository;
+    private final ProductOnStockPlaceSpecification productOnStockPlaceSpecification;
 
     ProductResponseDto getById(Long id) {
         return productMapper.fromEntity(getProductEntityById(id));
@@ -52,18 +55,11 @@ class ProductService {
 
     @Transactional
     void update(Long id, ProductRequestDto productRequestDto) {
-        Product productToUpd = getProductEntityById(id);
-        productToUpd.setName(productRequestDto.getName());
-        productToUpd.setPrice(productRequestDto.getPrice()); //напиши через маппер
+        Product prodId = getProductEntityById(id);
+        Product productToUpd
+                = productMapper.toEntityWithId(prodId.getId(), productRequestDto);
         productRepository.save(productToUpd);
-    }/*@Transactional
-    void update(Long id, ProductRequestDto productRequestDto) {
-        Product productToUpd = getProductEntityById(id);
-        productToUpd.setName(productRequestDto.getName());
-        productToUpd.setPrice(productRequestDto.getPrice()); //напиши через маппер
-        productRepository.save(productToUpd);
-    }*/
-
+    }
 
     @Transactional
     void addProductsToStockPlace(ProductPlacementDto productPlacementDto) {
@@ -91,7 +87,7 @@ class ProductService {
     ProductMovementResponseDto movementProductsBetweenStocks(ProductMovementRequestDto productMovementRequestDto) {
         long productId = productMovementRequestDto.getProductId();
         Product productEntity = getProductEntityById(productId);
-        StockPlace stockPlaceEntity = getStockPlaceEntityById(productMovementRequestDto.getStockPlaceIdFrom());
+        StockPlace stockPlaceEntityFrom = getStockPlaceEntityById(productMovementRequestDto.getStockPlaceIdFrom());
         StockPlace stockPlaceEntityTo = getStockPlaceEntityById(productMovementRequestDto.getStockPlaceIdTo());
         Long stockEntityToId = stockPlaceEntityTo.getStock().getId();
         Stock stockEntityTo = getStockEntityFromId(stockEntityToId);
@@ -109,7 +105,7 @@ class ProductService {
         long totalProductQuantityFinal = productQuantityToMove + quantityProductOnStockPlace; //общее количество товара на полке
 
         ProductOnStockPlace productOnStockPlaceByStockPlaceAndProduct //ProductOnStockPlace By StockPlace id + product id
-                = productOnStockPlaceRepository.getProductOnStockPlaceByStockPlaceAndProduct(stockPlaceEntity.getId(), productId);
+                = productOnStockPlaceRepository.getProductOnStockPlaceByStockPlaceAndProduct(stockPlaceEntityFrom.getId(), productId);
         long sumQuantityProductByStockPlaceAndProduct //количество конкретного продукта на конкретной полке
                 = productOnStockPlaceByStockPlaceAndProduct.getQuantityProduct();
         if (capacityStockPlace < totalProductQuantityFinal) {
@@ -142,7 +138,7 @@ class ProductService {
         return new ProductFilterResponseDto(productListByParam);
     }
 
-    /*    @Transactional
+      /*  @Transactional
         List<FilterResultDto> resultCriteriaFilter(String city, String product) {
             List<FilterResultDto> result = new ArrayList<>();
             FilterResultDto current = FilterResultDto.builder()
@@ -182,9 +178,95 @@ class ProductService {
     @Transactional
     List<FilterResultDto> resultCriteriaFilter(String city, String product) {
         List<FilterResultDto> result = new ArrayList<>();
-        List<Product> productList = productRepository.findAll(productSpecification.findByCityProduct(city, product));
-        for (Product pr : productList) {
-            result.add(converter(pr));
+        List<ProductOnStockPlace> resultPSP
+                = productOnStockPlaceRepository.findAll(productOnStockPlaceSpecification.findByCityProduct(city, product)
+        );
+        for (ProductOnStockPlace ignored : resultPSP) {
+            result.add(converter(resultPSP));
+        }
+        return result;
+    }
+
+    //конвертер для динамического фильтра ProductOnStockPlace -> FilterResult
+    private FilterResultDto converter(List<ProductOnStockPlace> pspList) {
+        FilterResultDto.FilterResultDtoBuilder result = FilterResultDto.builder();
+        List<FilterResultDto.StockDto> listStockDto = new ArrayList<>(); //список StockDto
+        IdNameDto.IdNameDtoBuilder idNameBuilder = IdNameDto.builder();
+        for (ProductOnStockPlace psp : pspList) {
+            idNameBuilder
+                    .id(psp.getProduct().getId())
+                    .name(psp.getProduct().getName());
+
+            Map<Long, List<StockPlaceFilterDto>> stockPlaceMap = convertToMap(pspList);
+            Map<Long, Long> stockPlaceMapQuantity = convertToMapQuantity(pspList);
+            FilterResultDto.StockDto stockDto //полностью собранный StockDto
+                    = getStockDto(stockPlaceMap, stockPlaceMapQuantity, psp);
+            listStockDto.add(stockDto);
+        }
+
+        result.product(idNameBuilder.build());
+        result.stockDto(listStockDto);
+        return result.build();
+    }
+
+    //сборка StockDto
+    private FilterResultDto.StockDto getStockDto(Map<Long, List<StockPlaceFilterDto>> stockPlaceMap,
+                                                 Map<Long, Long> stockPlaceMapQuantity,
+                                                 ProductOnStockPlace psp) {
+        Long stockId = psp.getStockPlace().getStock().getId();
+        FilterResultDto.StockDto stockDto = new FilterResultDto.StockDto(
+                stockId, psp.getStockPlace().getStock().getName());
+
+        stockDto.setCity(psp.getStockPlace().getStock().getCity()); //имя города в StockDto
+        for (Map.Entry<Long, List<StockPlaceFilterDto>> entry : stockPlaceMap.entrySet()) {
+            if (stockId.equals(entry.getKey())) {
+                stockDto.setStockPlaceFilterDto(entry.getValue()); //List<StockPlaceFilterDto> принадлежащий Stock
+            }
+        }
+        for (Map.Entry<Long, Long> entry : stockPlaceMapQuantity.entrySet()) {
+            if (stockId.equals(entry.getKey())) {
+                stockDto.setQuantity(entry.getValue()); //добавляем quantity в конкретный склад
+            }
+        }
+        return stockDto;
+    }
+
+    //Map<stockId, List<StockPlaceFilterDto>>
+    private Map<Long, List<StockPlaceFilterDto>> convertToMap(List<ProductOnStockPlace> list) {
+        List<StockPlaceFilterDto> stockPlaceList = new ArrayList<>();
+        Map<Long, List<StockPlaceFilterDto>> result = new HashMap<>();
+        StockPlaceFilterDto.StockPlaceFilterDtoBuilder filterBuilder = StockPlaceFilterDto.builder();
+        for (ProductOnStockPlace psp : list) {
+            Long id = psp.getStockPlace().getStock().getId();
+            //проверяем входящие id на совпадение с теми, которые есть в map
+            for (Map.Entry<Long, List<StockPlaceFilterDto>> entry : result.entrySet()) {
+                if (!id.equals(entry.getKey())) { //если не совпадает, то пишем k, v
+                    getStockPlaceFilterDtoBuilder(filterBuilder, psp); //собираем builder с готовой StPlFilterDto
+                    stockPlaceList.add(filterBuilder.build());
+                    result.put(id, stockPlaceList);
+                } //если совпадает, то добавляем в List<value>
+                List<StockPlaceFilterDto> listValues = entry.getValue();
+                getStockPlaceFilterDtoBuilder(filterBuilder, psp);
+                listValues.add(filterBuilder.build());
+                entry.setValue(listValues);
+            }
+        }
+        return result;
+    }
+
+    //Map<stockId, quantityStock>
+    private Map<Long, Long> convertToMapQuantity(List<ProductOnStockPlace> list) {
+        Map<Long, Long> result = new HashMap<>();
+        for (ProductOnStockPlace psp : list) {
+            Long stockId = psp.getStockPlace().getStock().getId();
+            long quantity = psp.getQuantityProduct();
+            for (Map.Entry<Long, Long> entry : result.entrySet()) {
+                if (!stockId.equals(entry.getKey())) { //если stockId не совпадает, то просто добавляем id - quantity
+                    result.put(stockId, quantity);
+                } //если совпадает, то += quantity
+                quantity += psp.getQuantityProduct();
+                entry.setValue(quantity);
+            }
         }
         return result;
     }
@@ -227,17 +309,17 @@ class ProductService {
                 .stockDto(stockDtoList)
                 .build();
     }*/
-    private FilterResultDto converter(Product product) {
+    /*private FilterResultDto converter(Product product) {
         IdNameDto productIdName = IdNameDto.builder()
                 .id(product.getId())
                 .name(product.getName())
                 .build();
-        long quantity = 0L;
-        List<FilterResultDto.StockDto> stockDtoList = new ArrayList<>();
+
+        List<FilterResultDto.StockDto> filterStockDtoList = new ArrayList<>();
         List<StockPlaceFilterDto> stockPlaceList = new ArrayList<>();
         Set<ProductOnStockPlace> stockPlaceSet = product.getProductOnStockPlaceSet(); //set psp по товару
         for (ProductOnStockPlace psp : stockPlaceSet) {
-
+            long quantity = 0L;
             Stock stock = psp.getStockPlace().getStock();
             Long stockId = stock.getId(); //берем stockId
             Set<ProductOnStockPlace> byStockId
@@ -261,12 +343,21 @@ class ProductService {
             stockDto.setQuantity(quantity);
             stockDto.setCity(city);
             stockDto.setStockPlaceFilterDto(stockPlaceList);
-            stockDtoList.add(stockDto);
+            filterStockDtoList.add(stockDto);
         }
         return FilterResultDto.builder()
                 .product(productIdName)
-                .stockDto(stockDtoList)
+                .stockDto(filterStockDtoList)
                 .build();
+    }*/
+
+    //builder с готовой StockPlaceFilterDto
+    private void getStockPlaceFilterDtoBuilder(StockPlaceFilterDto.StockPlaceFilterDtoBuilder filterBuilder, ProductOnStockPlace psp) {
+        StockPlace stockPlace = psp.getStockPlace();
+        filterBuilder.id(stockPlace.getId());
+        filterBuilder.row(stockPlace.getRow());
+        filterBuilder.shelf(stockPlace.getShelf());
+        filterBuilder.quantity(psp.getQuantityProduct());
     }
 
     //Response Dto

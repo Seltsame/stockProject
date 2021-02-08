@@ -1,9 +1,6 @@
 package ru.rocketscience.test.product;
 
-import lombok.Builder;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.Value;
+import lombok.*;
 import ru.rocketscience.test.common.IdNameDto;
 import ru.rocketscience.test.stockPlace.StockPlaceFilterDto;
 
@@ -11,6 +8,7 @@ import java.util.List;
 
 @Value
 @Builder
+@AllArgsConstructor
 public class FilterResultDto {
 
     IdNameDto product;
